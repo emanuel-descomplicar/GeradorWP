@@ -1,91 +1,168 @@
 # GeradorWP
 
+Sistema automatizado para geração e publicação de conteúdo no WordPress usando CrewAI e Dify.
+
 ## Descrição
-Ferramenta desenvolvida em Python para gerar e gerenciar conteúdo WordPress de forma automatizada e eficiente, utilizando Crew AI para orquestrar agentes especializados.
+
+O GeradorWP é uma solução completa para automatizar o processo de criação e publicação de conteúdo em sites WordPress. Utilizando inteligência artificial através da API Dify, o sistema é capaz de:
+
+- Pesquisar e coletar informações relevantes sobre um tópico
+- Gerar conteúdo otimizado para SEO
+- Estruturar artigos seguindo o padrão ACIDA
+- Adicionar links internos e externos
+- Gerar e otimizar imagens
+- Publicar automaticamente no WordPress
 
 ## Funcionalidades
-- Geração automática de conteúdo usando IA
-- Pesquisa automatizada de informações
-- Criação de conteúdo otimizado para SEO
-- Publicação automática no WordPress
-- Integração com WordPress via REST API
-- Processamento de texto e NLP
+
+- **Pesquisa Automática**
+  - Coleta de informações da web
+  - Análise de conteúdo existente
+  - Identificação de tendências
+  - Coleta de dados estatísticos
+
+- **Geração de Conteúdo**
+  - Estruturação ACIDA
+  - Otimização SEO automática
+  - Densidade de palavras-chave
+  - Call-to-Action (CTA)
+  - Links internos e externos
+
+- **Gestão de Imagens**
+  - Geração com IA
+  - Otimização automática
+  - Redimensionamento
+  - Miniaturas
+  - Compressão inteligente
+
+- **Integração WordPress**
+  - Publicação automática
+  - Gestão de categorias e tags
+  - Upload de mídia
+  - Metadados otimizados
+  - Agendamento de posts
 
 ## Requisitos
-- Python 3.x ou superior
-- Acesso a uma instalação WordPress
-- Conta OpenAI com API Key
-- Bibliotecas Python necessárias (ver requirements.txt)
+
+- Python 3.8 ou superior
+- WordPress com XML-RPC habilitado
+- Conta Dify com API key
+- Dependências listadas em `requirements.txt`
 
 ## Instalação
+
 1. Clone o repositório:
 ```bash
-git clone https://github.com/seu-usuario/geradorwp.git
-cd geradorwp
+git clone https://github.com/descomplicar/gerador-wp.git
+cd gerador-wp
 ```
 
-2. Crie um ambiente virtual e ative-o:
+2. Crie e ative um ambiente virtual:
 ```bash
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
-# ou
-.\venv\Scripts\activate  # Windows
+venv\Scripts\activate     # Windows
 ```
 
 3. Instale as dependências:
 ```bash
-pip install -r requirements.txt
+pip install -e .
 ```
 
 4. Configure as variáveis de ambiente:
 ```bash
 cp .env.example .env
+# Edite o arquivo .env com suas configurações
 ```
-Edite o ficheiro `.env` com suas credenciais.
 
-## Estrutura do Projeto
-```
-geradorwp/
-├── src/
-│   ├── agents/         # Agentes Crew AI
-│   ├── tasks/          # Tarefas dos agentes
-│   ├── config/         # Configurações
-│   └── main.py         # Script principal
-├── .env                # Variáveis de ambiente
-├── .env.example        # Exemplo de variáveis
-├── requirements.txt    # Dependências
-└── README.md          # Este ficheiro
+## Configuração
+
+O arquivo `.env` deve conter as seguintes variáveis:
+
+```env
+# Configurações Dify
+DIFY_API_KEY=sua_api_key
+DIFY_API_URL=https://api.dify.ai/v1
+
+# Configurações WordPress
+WP_URL=https://seu-site.com
+WP_USERNAME=seu_usuario
+WP_PASSWORD=sua_senha
+WP_APP_PASSWORD=sua_app_password
+
+# Configurações de Cache
+CACHE_TTL=3600
+CACHE_DIR=.cache
+
+# Configurações de Logging
+LOG_LEVEL=INFO
+LOG_FILE=gerador-wp.log
+
+# Configurações de Conteúdo
+MIN_CONTENT_LENGTH=1000
+MAX_CONTENT_LENGTH=5000
+DEFAULT_CATEGORY=Blog
+DEFAULT_TAGS=
+
+# Configurações de Imagem
+IMAGE_WIDTH=1200
+IMAGE_HEIGHT=630
+IMAGE_QUALITY=90
 ```
 
 ## Utilização
-1. Certifique-se de que todas as variáveis de ambiente estão configuradas no ficheiro `.env`
 
-2. Execute o script principal:
+1. Gerar um artigo:
 ```bash
-python src/main.py
+gerador-wp "Tópico do Artigo" --keywords "palavra1" "palavra2" --category "Marketing"
 ```
 
-3. O sistema irá:
-   - Pesquisar informações sobre o tópico
-   - Gerar conteúdo otimizado
-   - Publicar no WordPress
+2. Gerar como rascunho:
+```bash
+gerador-wp "Tópico do Artigo" --draft
+```
 
-## Agentes
-O sistema utiliza três agentes especializados:
+3. Especificar tags:
+```bash
+gerador-wp "Tópico do Artigo" --tags "tag1" "tag2"
+```
 
-1. **Pesquisador**: Coleta informações relevantes sobre o tópico
-2. **Escritor**: Cria conteúdo otimizado para SEO
-3. **Publicador**: Gerencia a publicação no WordPress
+## Estrutura do Projeto
+
+```
+src/
+├── agents/                 # Agentes CrewAI
+│   ├── researcher_agent.py # Pesquisa e coleta
+│   ├── writer_agent.py     # Geração de conteúdo
+│   └── publisher_agent.py  # Publicação WordPress
+├── config/
+│   └── config.py          # Configurações
+└── utils/                 # Utilitários
+    ├── cache.py          # Sistema de cache
+    ├── logger.py         # Sistema de logging
+    ├── http.py           # Cliente HTTP
+    ├── wordpress.py      # Cliente WordPress
+    ├── dify.py           # Cliente Dify
+    ├── seo.py            # Otimização SEO
+    ├── content.py        # Gestão de conteúdo
+    ├── image.py          # Gestão de imagens
+    ├── validation.py     # Validações
+    └── exceptions.py     # Exceções personalizadas
+```
 
 ## Contribuição
-Contribuições são bem-vindas! Por favor, siga estas etapas:
 
-1. Faça um fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
+1. Fork o projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/nome`)
+3. Commit suas mudanças (`git commit -am 'Adiciona feature'`)
+4. Push para a branch (`git push origin feature/nome`)
+5. Crie um Pull Request
+
+## Licença
+
+Este projeto está licenciado sob a licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
 
 ## Autor
+
 Descomplicar - Agência de Aceleração Digital
 https://descomplicar.pt 

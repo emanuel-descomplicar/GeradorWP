@@ -1,0 +1,70 @@
+2025-03-07 19:36:04,815 - gerador_wp.agents.researcher_agent - INFO - Iniciando pesquisa para: A Importância do Marketing Digital para Clínicas de Psicologia
+2025-03-07 19:36:04,815 - gerador_wp.agents.researcher_agent - ERROR - Erro na pesquisa web: A Importância do Marketing Digital para Clínicas de Psicologia - Erro: 'DifyClient' object has no attribute 'completion'
+2025-03-07 19:36:04,816 - gerador_wp.agents.researcher_agent - ERROR - Erro na pesquisa web: A Importância do Marketing Digital para Clínicas de Psicologia - Erro: 'DifyClient' object has no attribute 'completion'
+Traceback (most recent call last):
+  File "/mnt/dados/Cloud/Dev/Scripts/GeradorWP/gerador_wp/agents/researcher_agent.py", line 119, in _web_search
+    response = self.dify.completion(
+AttributeError: 'DifyClient' object has no attribute 'completion'
+2025-03-07 19:36:04,818 - gerador_wp.agents.researcher_agent - ERROR - Erro na pesquisa completa: A Importância do Marketing Digital para Clínicas de Psicologia - Erro: Erro ao pesquisar: 'DifyClient' object has no attribute 'completion'
+2025-03-07 19:36:04,818 - gerador_wp.agents.researcher_agent - ERROR - Erro na pesquisa completa: A Importância do Marketing Digital para Clínicas de Psicologia - Erro: Erro ao pesquisar: 'DifyClient' object has no attribute 'completion'
+Traceback (most recent call last):
+  File "/mnt/dados/Cloud/Dev/Scripts/GeradorWP/gerador_wp/agents/researcher_agent.py", line 119, in _web_search
+    response = self.dify.completion(
+AttributeError: 'DifyClient' object has no attribute 'completion'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/mnt/dados/Cloud/Dev/Scripts/GeradorWP/gerador_wp/agents/researcher_agent.py", line 271, in research
+    web_results = self._web_search(topic)
+  File "/mnt/dados/Cloud/Dev/Scripts/GeradorWP/gerador_wp/agents/researcher_agent.py", line 135, in _web_search
+    raise ResearchError(f"Erro ao pesquisar: {str(e)}")
+gerador_wp.utils.exceptions.ResearchError: Erro ao pesquisar: 'DifyClient' object has no attribute 'completion'
+2025-03-07 19:37:25,653 - gerador_wp.agents.researcher_agent - INFO - Iniciando pesquisa para: A Importância do Marketing Digital para Clínicas de Psicologia
+2025-03-07 19:37:25,916 - gerador_wp.agents.researcher_agent - ERROR - Erro na pesquisa web: A Importância do Marketing Digital para Clínicas de Psicologia - Erro: Erro na chamada à API do Dify: 400 Client Error: Bad Request for url: https://didi.descomplicar.pt/v1/chat-messages
+2025-03-07 19:37:25,917 - gerador_wp.agents.researcher_agent - ERROR - Erro na pesquisa web: A Importância do Marketing Digital para Clínicas de Psicologia - Erro: Erro na chamada à API do Dify: 400 Client Error: Bad Request for url: https://didi.descomplicar.pt/v1/chat-messages
+Traceback (most recent call last):
+  File "/mnt/dados/Cloud/Dev/Scripts/GeradorWP/gerador_wp/utils/dify.py", line 75, in chat_completion
+    response.raise_for_status()
+  File "/mnt/dados/Cloud/Dev/Scripts/GeradorWP/venv/lib/python3.10/site-packages/requests/models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://didi.descomplicar.pt/v1/chat-messages
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/mnt/dados/Cloud/Dev/Scripts/GeradorWP/gerador_wp/agents/researcher_agent.py", line 119, in _web_search
+    response = self.dify.completion(
+  File "/mnt/dados/Cloud/Dev/Scripts/GeradorWP/gerador_wp/utils/dify.py", line 103, in completion
+    response = self.chat_completion(
+  File "/mnt/dados/Cloud/Dev/Scripts/GeradorWP/gerador_wp/utils/dify.py", line 78, in chat_completion
+    raise Exception(f"Erro na chamada à API do Dify: {str(e)}")
+Exception: Erro na chamada à API do Dify: 400 Client Error: Bad Request for url: https://didi.descomplicar.pt/v1/chat-messages
+2025-03-07 19:37:25,936 - gerador_wp.agents.researcher_agent - ERROR - Erro na pesquisa completa: A Importância do Marketing Digital para Clínicas de Psicologia - Erro: Erro ao pesquisar: Erro na chamada à API do Dify: 400 Client Error: Bad Request for url: https://didi.descomplicar.pt/v1/chat-messages
+2025-03-07 19:37:25,936 - gerador_wp.agents.researcher_agent - ERROR - Erro na pesquisa completa: A Importância do Marketing Digital para Clínicas de Psicologia - Erro: Erro ao pesquisar: Erro na chamada à API do Dify: 400 Client Error: Bad Request for url: https://didi.descomplicar.pt/v1/chat-messages
+Traceback (most recent call last):
+  File "/mnt/dados/Cloud/Dev/Scripts/GeradorWP/gerador_wp/utils/dify.py", line 75, in chat_completion
+    response.raise_for_status()
+  File "/mnt/dados/Cloud/Dev/Scripts/GeradorWP/venv/lib/python3.10/site-packages/requests/models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://didi.descomplicar.pt/v1/chat-messages
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/mnt/dados/Cloud/Dev/Scripts/GeradorWP/gerador_wp/agents/researcher_agent.py", line 119, in _web_search
+    response = self.dify.completion(
+  File "/mnt/dados/Cloud/Dev/Scripts/GeradorWP/gerador_wp/utils/dify.py", line 103, in completion
+    response = self.chat_completion(
+  File "/mnt/dados/Cloud/Dev/Scripts/GeradorWP/gerador_wp/utils/dify.py", line 78, in chat_completion
+    raise Exception(f"Erro na chamada à API do Dify: {str(e)}")
+Exception: Erro na chamada à API do Dify: 400 Client Error: Bad Request for url: https://didi.descomplicar.pt/v1/chat-messages
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/mnt/dados/Cloud/Dev/Scripts/GeradorWP/gerador_wp/agents/researcher_agent.py", line 271, in research
+    web_results = self._web_search(topic)
+  File "/mnt/dados/Cloud/Dev/Scripts/GeradorWP/gerador_wp/agents/researcher_agent.py", line 135, in _web_search
+    raise ResearchError(f"Erro ao pesquisar: {str(e)}")
+gerador_wp.utils.exceptions.ResearchError: Erro ao pesquisar: Erro na chamada à API do Dify: 400 Client Error: Bad Request for url: https://didi.descomplicar.pt/v1/chat-messages
