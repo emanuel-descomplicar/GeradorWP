@@ -1,1 +1,77 @@
- 
+# Project Configuration
+
+## Project Details
+- Name: GeradorWP
+- Language: Python
+- Framework: CrewAI
+- Author: Descomplicar - Agência de Aceleração Digital
+- Website: https://descomplicar.pt
+
+## Code Style
+- Indentation: 4 spaces
+- Max line length: 120 characters
+- Naming conventions:
+  - Variables: camelCase
+  - Classes: PascalCase
+  - Constants: UPPER_SNAKE_CASE
+  - Functions: snake_case
+
+## File Patterns
+- Python files: *.py
+- Configuration files: *.yml, *.yaml, *.json
+- Documentation: *.md
+- Environment: .env
+
+## Ignore Patterns
+- __pycache__/
+- *.pyc
+- .env
+- venv/
+- .git/
+- .vscode/
+- .idea/
+
+## Auto-formatting
+- Enabled for Python files
+- Use black for formatting
+- Use isort for import sorting
+
+## Linting
+- Enabled for Python files
+- Use flake8 for linting
+- Use mypy for type checking
+
+## Testing
+- Use pytest for testing
+- Test files should be named test_*.py
+- Test functions should be named test_*
+
+## AI Assistant Features
+- Code completion
+- Code refactoring
+- Documentation generation
+- Bug detection
+- Performance optimization
+
+# Scratchpad
+
+## Current Task: Configuração do Projeto GeradorWP
+
+### Objetivo
+Configurar o ambiente de desenvolvimento para o projeto GeradorWP, que utiliza CrewAI para gerar conteúdo para WordPress.
+
+### Progresso
+[X] Instalar cookiecutter e template devin.cursorrules
+[X] Configurar .cursorrules com as regras específicas do projeto
+[ ] Configurar ambiente virtual e dependências
+[ ] Configurar estrutura de diretórios
+[ ] Configurar ferramentas de desenvolvimento
+[ ] Configurar integração contínua
+[ ] Configurar documentação
+
+### Próximos Passos
+1. Configurar o ambiente virtual com as dependências necessárias
+2. Criar a estrutura de diretórios do projeto
+3. Configurar as ferramentas de desenvolvimento (linting, formatação, etc.)
+4. Configurar a integração contínua
+5. Configurar a documentação do projeto

@@ -1,10 +1,22 @@
-crewai>=0.11.0
-langchain>=0.1.0
-openai>=1.12.0
+# Web scraping
+playwright>=1.41.0
+html5lib>=1.1
+
+# Search engine
+duckduckgo-search>=7.2.1
+
+# LLM integration
+openai>=1.59.8 # o1 support
+anthropic>=0.42.0
 python-dotenv>=1.0.0
-requests>=2.31.0
-python-wordpress-xmlrpc>=2.3
-nltk>=3.8.1
-python-dateutil>=2.8.2
-duckduckgo-search>=4.1.1
-beautifulsoup4>=4.12.2 
+
+# Testing
+unittest2>=1.1.0
+pytest>=8.0.0
+pytest-asyncio>=0.23.5
+
+# Google Generative AI
+google-generativeai
+
+# gRPC, for Google Generative AI preventing WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+grpcio==1.70.0
