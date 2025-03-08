@@ -1,5 +1,5 @@
 """
-Script para gerar um artigo sobre marketing digital para clínicas de psicologia.
+Script para gerar e publicar um artigo sobre marketing digital para clínicas de psicologia.
 
 Autor: Descomplicar - Agência de Aceleração Digital
 https://descomplicar.pt
@@ -9,218 +9,241 @@ import os
 import sys
 import logging
 from dotenv import load_dotenv
+from wordpress_xmlrpc import Client, WordPressPost
+from wordpress_xmlrpc.methods.posts import NewPost
 
-# Carrega as variáveis de ambiente
-load_dotenv()
-
-# Configura o logging
+# Configuração de logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-def main():
-    """Função principal para gerar o artigo."""
+# Carrega variáveis de ambiente
+load_dotenv()
+
+def gerar_artigo():
+    """Gera um artigo sobre marketing digital para clínicas de psicologia."""
+    logger.info("Gerando artigo sobre marketing digital para clínicas de psicologia...")
+    
+    # Título do artigo
+    titulo = "A Importância do Marketing Digital para Clínicas de Psicologia"
+    
+    # Conteúdo do artigo
+    conteudo = """
+<h1>A Importância do Marketing Digital para Clínicas de Psicologia</h1>
+
+<p>No cenário atual, onde a presença online se tornou essencial para qualquer negócio, as clínicas de psicologia não podem ficar para trás. O marketing digital oferece ferramentas poderosas que permitem às clínicas de psicologia alcançarem mais pacientes, construírem uma reputação sólida e se destacarem num mercado cada vez mais competitivo.</p>
+
+<h2>Por que o Marketing Digital é Fundamental para Clínicas de Psicologia?</h2>
+
+<p>A transformação digital tem mudado a forma como as pessoas procuram serviços de saúde mental. Hoje, antes de marcar uma consulta, potenciais pacientes pesquisam online, leem avaliações e comparam opções. Uma estratégia de marketing digital bem executada permite que sua clínica:</p>
+
+<ul>
+    <li><strong>Aumente sua visibilidade online</strong>, sendo encontrada por quem precisa dos seus serviços</li>
+    <li><strong>Construa credibilidade e confiança</strong> através de conteúdo relevante e educativo</li>
+    <li><strong>Estabeleça conexões significativas</strong> com pacientes atuais e potenciais</li>
+    <li><strong>Diferencie-se da concorrência</strong>, destacando sua abordagem única</li>
+    <li><strong>Expanda seu alcance geográfico</strong>, especialmente com a popularização do atendimento online</li>
+</ul>
+
+<h2>Estratégias Eficazes de Marketing Digital para Psicólogos</h2>
+
+<h3>1. Website Profissional e Otimizado</h3>
+
+<p>Seu website é frequentemente o primeiro contato que potenciais pacientes têm com sua clínica. Ele deve ser:</p>
+
+<ul>
+    <li>Profissional e acolhedor, transmitindo confiança</li>
+    <li>Responsivo, funcionando perfeitamente em dispositivos móveis</li>
+    <li>Otimizado para SEO, para ser encontrado nas pesquisas</li>
+    <li>Fácil de navegar, com informações claras sobre serviços e formas de contato</li>
+    <li>Seguro, especialmente para proteger dados sensíveis dos pacientes</li>
+</ul>
+
+<h3>2. Conteúdo Relevante e Educativo</h3>
+
+<p>Criar e compartilhar conteúdo de qualidade posiciona você como autoridade em sua área e ajuda a educar o público sobre saúde mental:</p>
+
+<ul>
+    <li>Blog com artigos sobre temas relevantes de psicologia</li>
+    <li>E-books e guias sobre bem-estar mental</li>
+    <li>Vídeos explicativos sobre condições psicológicas comuns</li>
+    <li>Podcasts abordando temas de saúde mental</li>
+    <li>Infográficos compartilháveis em redes sociais</li>
+</ul>
+
+<h3>3. Presença Ativa nas Redes Sociais</h3>
+
+<p>As redes sociais são canais poderosos para conectar-se com seu público e desmistificar temas relacionados à saúde mental:</p>
+
+<ul>
+    <li>Instagram para compartilhar dicas rápidas e infográficos</li>
+    <li>Facebook para criar uma comunidade e compartilhar artigos mais longos</li>
+    <li>LinkedIn para networking profissional e conteúdo mais técnico</li>
+    <li>YouTube para vídeos educativos e explicativos</li>
+    <li>TikTok para alcançar públicos mais jovens com conteúdo acessível</li>
+</ul>
+
+<h3>4. Email Marketing Personalizado</h3>
+
+<p>O email marketing permite manter contato regular com pacientes atuais e potenciais:</p>
+
+<ul>
+    <li>Newsletter mensal com dicas de saúde mental</li>
+    <li>Lembretes de consultas e acompanhamentos</li>
+    <li>Conteúdo exclusivo para assinantes</li>
+    <li>Informações sobre novos serviços ou horários disponíveis</li>
+    <li>Pesquisas de satisfação para melhorar continuamente</li>
+</ul>
+
+<h3>5. SEO Local para Atrair Pacientes da Região</h3>
+
+<p>Para clínicas físicas, o SEO local é fundamental para ser encontrado por pacientes próximos:</p>
+
+<ul>
+    <li>Google Meu Negócio otimizado e atualizado</li>
+    <li>Diretórios locais de profissionais de saúde</li>
+    <li>Palavras-chave locais no seu website</li>
+    <li>Avaliações e depoimentos de pacientes</li>
+    <li>Conteúdo relevante para a comunidade local</li>
+</ul>
+
+<h2>Desafios Específicos e Como Superá-los</h2>
+
+<h3>Confidencialidade e Ética Profissional</h3>
+
+<p>O marketing para serviços de psicologia deve sempre respeitar a confidencialidade e seguir os códigos de ética profissional:</p>
+
+<ul>
+    <li>Nunca use casos reais sem consentimento explícito e anonimização</li>
+    <li>Evite promessas de "cura" ou resultados garantidos</li>
+    <li>Mantenha a comunicação profissional e baseada em evidências</li>
+    <li>Seja transparente sobre qualificações e abordagens terapêuticas</li>
+    <li>Respeite os limites da relação profissional nas redes sociais</li>
+</ul>
+
+<h3>Equilibrando o Profissionalismo e a Acessibilidade</h3>
+
+<p>Um desafio comum é encontrar o equilíbrio entre manter o profissionalismo e tornar o conteúdo acessível:</p>
+
+<ul>
+    <li>Use linguagem clara e evite jargão técnico excessivo</li>
+    <li>Mantenha o tom acolhedor, mas profissional</li>
+    <li>Aborde temas sensíveis com cuidado e respeito</li>
+    <li>Humanize sua comunicação sem comprometer a credibilidade</li>
+    <li>Adapte a linguagem ao canal e ao público-alvo</li>
+</ul>
+
+<h2>Medindo Resultados e Ajustando Estratégias</h2>
+
+<p>Como em qualquer estratégia de marketing, é essencial medir resultados e fazer ajustes:</p>
+
+<ul>
+    <li>Acompanhe métricas de tráfego do website e conversões</li>
+    <li>Monitore o engajamento nas redes sociais</li>
+    <li>Analise taxas de abertura e cliques em campanhas de email</li>
+    <li>Pergunte aos novos pacientes como encontraram sua clínica</li>
+    <li>Teste diferentes abordagens e otimize com base nos resultados</li>
+</ul>
+
+<h2>Conclusão</h2>
+
+<p>O marketing digital não é apenas uma tendência passageira, mas uma necessidade para clínicas de psicologia que desejam prosperar no ambiente atual. Ao implementar estratégias eficazes de marketing digital, psicólogos podem não apenas atrair mais pacientes, mas também educar o público sobre a importância da saúde mental e derrubar estigmas associados à busca por ajuda psicológica.</p>
+
+<p>Lembre-se que o objetivo final do marketing para serviços de psicologia não é apenas promover seu negócio, mas também conectar pessoas que precisam de ajuda com os profissionais qualificados que podem fornecê-la.</p>
+
+<h3>Precisa de ajuda para implementar estratégias de marketing digital para sua clínica de psicologia?</h3>
+
+<p>A Descomplicar - Agência de Aceleração Digital especializa-se em soluções de marketing digital para profissionais de saúde. Entre em contato connosco para descobrir como podemos ajudar sua clínica a alcançar mais pacientes e fazer a diferença na vida de mais pessoas.</p>
+    """
+    
+    # Resumo do artigo
+    resumo = """
+    Descubra como o marketing digital pode transformar sua clínica de psicologia, aumentando sua visibilidade online, construindo credibilidade e atraindo mais pacientes. Este artigo apresenta estratégias eficazes de marketing digital específicas para psicólogos, abordando desafios únicos da área e fornecendo dicas práticas para implementação.
+    """
+    
+    # Categorias e tags
+    categorias = ["Marketing Digital", "Psicologia"]
+    tags = [
+        "marketing digital psicologia", 
+        "marketing para psicólogos", 
+        "divulgação clínica psicologia", 
+        "psicologia online", 
+        "marketing consultório psicologia", 
+        "presença digital psicólogos", 
+        "atendimento online psicologia", 
+        "estratégias marketing psicologia"
+    ]
+    
+    return {
+        "titulo": titulo,
+        "conteudo": conteudo,
+        "resumo": resumo,
+        "categorias": categorias,
+        "tags": tags
+    }
+
+def publicar_no_wordpress(artigo):
+    """Publica o artigo no WordPress."""
     try:
-        print("Iniciando geração de artigo: A Importância do Marketing Digital para Clínicas de Psicologia")
+        # Configurações do WordPress
+        wp_url = os.getenv('WP_URL')
+        wp_username = os.getenv('WP_USERNAME')
+        wp_password = os.getenv('WP_APP_PASSWORD')
         
-        # Define o tópico e palavras-chave
-        topic = "A Importância do Marketing Digital para Clínicas de Psicologia"
-        keywords = [
-            "marketing digital psicologia",
-            "marketing para psicólogos",
-            "divulgação clínica psicologia",
-            "psicologia online",
-            "marketing consultório psicologia",
-            "presença digital psicólogos",
-            "atendimento online psicologia",
-            "estratégias marketing psicologia"
-        ]
+        if not wp_url or not wp_username or not wp_password:
+            logger.error("Configurações do WordPress não encontradas no arquivo .env")
+            return False
         
-        print(f"Palavras-chave: {', '.join(keywords)}")
+        # Conecta ao WordPress
+        wp_client = Client(f"{wp_url}/xmlrpc.php", wp_username, wp_password)
         
-        # Gera o conteúdo diretamente
-        print("\n1. Gerando conteúdo...")
-        
-        content = """
-# A Importância do Marketing Digital para Clínicas de Psicologia
-
-## Introdução
-
-No cenário atual, onde a presença online se tornou essencial para qualquer negócio, as clínicas de psicologia não podem ficar para trás. O marketing digital oferece oportunidades únicas para psicólogos e clínicas ampliarem seu alcance, estabelecerem autoridade em suas áreas de especialização e conectarem-se com potenciais pacientes de forma mais eficaz e personalizada.
-
-Este artigo explora a importância do marketing digital para clínicas de psicologia, apresentando estratégias práticas e eficientes para implementar uma presença online sólida e ética, respeitando sempre os princípios deontológicos da profissão.
-
-## Por que o Marketing Digital é Essencial para Clínicas de Psicologia?
-
-### Alcance Ampliado
-
-O marketing digital permite que clínicas de psicologia alcancem um público muito maior do que seria possível apenas com métodos tradicionais. Através de estratégias bem implementadas, é possível atingir pessoas que estão ativamente procurando por serviços de saúde mental, mesmo que estejam geograficamente distantes da sua clínica.
-
-### Credibilidade e Autoridade
-
-Manter um site profissional, blog com conteúdo relevante e perfis ativos nas redes sociais ajuda a estabelecer a clínica como uma autoridade no campo da psicologia. Compartilhar conhecimentos, pesquisas e informações úteis sobre saúde mental contribui para construir confiança com potenciais pacientes.
-
-### Educação e Desmistificação
-
-O marketing de conteúdo permite educar o público sobre a importância da saúde mental, desmistificar o processo terapêutico e reduzir o estigma associado à busca por ajuda psicológica. Isso não apenas beneficia a sociedade como um todo, mas também incentiva mais pessoas a procurarem apoio profissional.
-
-### Personalização e Segmentação
-
-As ferramentas digitais permitem segmentar o público-alvo com base em diversos critérios, como idade, localização, interesses e comportamentos online. Isso possibilita a criação de mensagens mais relevantes e personalizadas, aumentando a eficácia das campanhas de marketing.
-
-## Estratégias de Marketing Digital para Clínicas de Psicologia
-
-### 1. Website Profissional e Otimizado
-
-Um website bem estruturado é a base de qualquer estratégia de marketing digital. Para clínicas de psicologia, o site deve:
-
-- Ter design limpo e acolhedor, transmitindo confiança e profissionalismo
-- Ser responsivo (adaptado para dispositivos móveis)
-- Incluir informações claras sobre serviços, especialidades e profissionais
-- Conter depoimentos de pacientes (respeitando o anonimato)
-- Facilitar o agendamento de consultas
-- Ser otimizado para SEO (Search Engine Optimization)
-
-### 2. Marketing de Conteúdo
-
-Criar e compartilhar conteúdo relevante é uma das estratégias mais eficazes para clínicas de psicologia:
-
-- Blog com artigos sobre saúde mental, bem-estar e temas relacionados
-- E-books e guias gratuitos sobre tópicos específicos
-- Vídeos explicativos sobre condições psicológicas comuns
-- Podcasts abordando questões de saúde mental
-- Infográficos com dicas práticas e informações úteis
-
-### 3. Presença nas Redes Sociais
-
-As redes sociais são canais poderosos para conectar-se com o público:
-
-- Instagram: compartilhar infográficos, dicas rápidas e conteúdo visual
-- Facebook: criar uma comunidade, compartilhar artigos e promover eventos
-- LinkedIn: networking profissional e compartilhamento de conteúdo mais técnico
-- YouTube: vídeos educativos sobre saúde mental
-- Twitter: compartilhar notícias, pesquisas e participar de discussões relevantes
-
-### 4. Email Marketing
-
-O email marketing continua sendo uma ferramenta eficaz para nutrir relacionamentos:
-
-- Newsletter mensal com artigos, dicas e novidades da clínica
-- Sequências de emails educativos para novos inscritos
-- Lembretes de consultas e acompanhamento pós-atendimento
-- Conteúdo exclusivo para a lista de emails
-
-### 5. SEO (Search Engine Optimization)
-
-Otimizar o site para mecanismos de busca é fundamental para ser encontrado por quem procura serviços de psicologia:
-
-- Pesquisa de palavras-chave relevantes para o setor
-- Otimização on-page (títulos, meta descrições, estrutura de URL)
-- Criação de conteúdo otimizado para termos de busca específicos
-- Construção de backlinks de qualidade
-- Otimização para busca local (Google Meu Negócio)
-
-### 6. Publicidade Online
-
-Anúncios pagos podem complementar as estratégias orgânicas:
-
-- Google Ads para aparecer nas buscas por termos relevantes
-- Anúncios no Facebook e Instagram direcionados ao público-alvo
-- Remarketing para reconectar-se com visitantes do site
-- Anúncios de display em sites relacionados à saúde e bem-estar
-
-## Considerações Éticas no Marketing Digital para Psicólogos
-
-Ao implementar estratégias de marketing digital, os psicólogos devem sempre considerar as questões éticas envolvidas:
-
-### Confidencialidade
-
-Nunca compartilhar informações que possam identificar pacientes, mesmo com consentimento. Depoimentos devem ser anônimos ou fictícios (com clara indicação).
-
-### Expectativas Realistas
-
-Evitar promessas de "cura" ou resultados garantidos. O marketing deve ser honesto sobre o que a terapia pode oferecer.
-
-### Linguagem Apropriada
-
-Utilizar linguagem acessível, mas evitar simplificações excessivas que possam banalizar condições psicológicas sérias.
-
-### Respeito às Diretrizes Profissionais
-
-Seguir as diretrizes do conselho profissional de psicologia quanto à publicidade e marketing de serviços.
-
-## Medindo o Sucesso das Estratégias de Marketing Digital
-
-Para avaliar a eficácia das estratégias implementadas, é importante monitorar métricas como:
-
-- Tráfego do website
-- Taxa de conversão (visitantes que agendam consultas)
-- Engajamento nas redes sociais
-- Abertura e cliques em emails
-- Posicionamento nas buscas para palavras-chave relevantes
-- ROI (retorno sobre investimento) em publicidade paga
-
-## Conclusão
-
-O marketing digital oferece inúmeras oportunidades para clínicas de psicologia ampliarem seu alcance, educarem o público sobre saúde mental e conectarem-se com pessoas que precisam de apoio psicológico. Ao implementar estratégias digitais de forma ética e profissional, os psicólogos não apenas beneficiam seus consultórios, mas também contribuem para uma sociedade mais consciente sobre a importância da saúde mental.
-
-Investir em marketing digital não significa abandonar os valores fundamentais da profissão, mas sim utilizar as ferramentas disponíveis para cumprir melhor a missão de promover o bem-estar psicológico e ajudar mais pessoas a terem acesso a serviços de saúde mental de qualidade.
-
-## Como Começar?
-
-Se você é proprietário de uma clínica de psicologia e deseja implementar ou aprimorar suas estratégias de marketing digital, considere começar com passos simples:
-
-1. Crie ou atualize seu website
-2. Estabeleça presença nas redes sociais mais relevantes para seu público
-3. Comece a produzir conteúdo útil e informativo
-4. Otimize seu perfil no Google Meu Negócio
-5. Considere buscar ajuda profissional para estratégias mais avançadas
-
-Lembre-se: o marketing digital é uma maratona, não uma corrida de velocidade. Resultados consistentes vêm com tempo, dedicação e estratégias bem planejadas.
-
-Precisa de ajuda para implementar estratégias de marketing digital para sua clínica de psicologia? Entre em contato conosco para uma consultoria especializada!
-        """
-        
-        # Publica o conteúdo no WordPress
-        print("\n2. Publicando no WordPress...")
-        
-        from gerador_wp.utils.wordpress import WordPressClient
-        
-        # Inicializa o cliente WordPress
-        wp_client = WordPressClient()
-        
-        # Define os dados do post
-        title = "A Importância do Marketing Digital para Clínicas de Psicologia"
-        excerpt = "Descubra como o marketing digital pode transformar a presença online da sua clínica de psicologia, atrair mais pacientes e estabelecer autoridade no mercado, sempre respeitando os princípios éticos da profissão."
-        status = "draft"  # Pode ser "draft", "publish", "pending", "private"
-        category = "Marketing Digital"
-        tags = keywords
+        # Cria o post
+        post = WordPressPost()
+        post.title = artigo["titulo"]
+        post.content = artigo["conteudo"]
+        post.excerpt = artigo["resumo"]
+        post.terms_names = {
+            'category': artigo["categorias"],
+            'post_tag': artigo["tags"]
+        }
+        post.post_status = 'publish'
         
         # Publica o post
-        post_data = wp_client.create_post(
-            title=title,
-            content=content,
-            excerpt=excerpt,
-            status=status,
-            category=category,
-            tags=tags
-        )
+        post_id = wp_client.call(NewPost(post))
         
-        # Exibe informações sobre o post publicado
-        print("\n3. Artigo publicado com sucesso!")
-        print(f"Título: {post_data['title']}")
-        print(f"Status: {post_data['status']}")
-        print(f"Link: {post_data['link']}")
-        print(f"ID: {post_data['id']}")
+        logger.info(f"Artigo publicado com sucesso! ID: {post_id}")
+        logger.info(f"Título: {artigo['titulo']}")
+        logger.info(f"URL: {wp_url}/?p={post_id}")
         
-        return 0
-    
+        return True
+    except Exception as e:
+        logger.error(f"Erro ao publicar no WordPress: {str(e)}")
+        return False
+
+def main():
+    """Função principal."""
+    try:
+        print("Iniciando geração e publicação de artigo sobre marketing digital para clínicas de psicologia...")
+        
+        # Gera o artigo
+        artigo = gerar_artigo()
+        
+        # Publica no WordPress
+        resultado = publicar_no_wordpress(artigo)
+        
+        if resultado:
+            print("Artigo gerado e publicado com sucesso!")
+        else:
+            print("Erro ao publicar o artigo. Verifique os logs para mais detalhes.")
+        
     except Exception as e:
         logger.error(f"Erro: {str(e)}")
-        print(f"\nErro: {str(e)}")
+        print(f"Erro: {str(e)}")
         return 1
+    
+    return 0
 
 if __name__ == "__main__":
     sys.exit(main()) 

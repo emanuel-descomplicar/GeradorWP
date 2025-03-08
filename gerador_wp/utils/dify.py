@@ -10,6 +10,7 @@ import json
 import requests
 from typing import Dict, Any, Optional, List
 from dotenv import load_dotenv
+from .exceptions import DifyError
 
 load_dotenv()
 
@@ -56,10 +57,10 @@ class DifyClient:
         
         # Extrair a query do último message
         query = ""
-        if messages and len(messages) > 0:
-            last_message = messages[-1]
-            if last_message.get("role") == "user":
-                query = last_message.get("content", "")
+        for msg in reversed(messages):
+            if msg.get("role") == "user":
+                query = msg.get("content", "")
+                break
         
         payload = {
             "inputs": {},
@@ -69,31 +70,12 @@ class DifyClient:
             "user": "default"
         }
 
-        # Adicionar parâmetros opcionais
-        if temperature != 0.7 or top_p != 0.95 or presence_penalty != 0 or frequency_penalty != 0 or max_tokens:
-            payload["parameters"] = {}
-            
-            if temperature != 0.7:
-                payload["parameters"]["temperature"] = temperature
-            
-            if top_p != 0.95:
-                payload["parameters"]["top_p"] = top_p
-            
-            if presence_penalty != 0:
-                payload["parameters"]["presence_penalty"] = presence_penalty
-            
-            if frequency_penalty != 0:
-                payload["parameters"]["frequency_penalty"] = frequency_penalty
-            
-            if max_tokens:
-                payload["parameters"]["max_tokens"] = max_tokens
-
         try:
             response = requests.post(endpoint, headers=self.headers, json=payload)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Erro na chamada à API do Dify: {str(e)}")
+            raise DifyError(f"Erro na chamada à API do Dify: {str(e)}")
 
     def completion(
         self,
@@ -127,25 +109,6 @@ class DifyClient:
             "user": "default"
         }
 
-        # Adicionar parâmetros opcionais
-        if temperature != 0.7 or top_p != 0.95 or presence_penalty != 0 or frequency_penalty != 0 or max_tokens:
-            payload["parameters"] = {}
-            
-            if temperature != 0.7:
-                payload["parameters"]["temperature"] = temperature
-            
-            if top_p != 0.95:
-                payload["parameters"]["top_p"] = top_p
-            
-            if presence_penalty != 0:
-                payload["parameters"]["presence_penalty"] = presence_penalty
-            
-            if frequency_penalty != 0:
-                payload["parameters"]["frequency_penalty"] = frequency_penalty
-            
-            if max_tokens:
-                payload["parameters"]["max_tokens"] = max_tokens
-
         try:
             response = requests.post(endpoint, headers=self.headers, json=payload)
             response.raise_for_status()
@@ -158,7 +121,7 @@ class DifyClient:
                 }]
             }
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Erro na chamada à API do Dify: {str(e)}")
+            raise DifyError(f"Erro na chamada à API do Dify: {str(e)}")
 
     def generate_text(self, prompt: str, **kwargs) -> str:
         """
@@ -171,12 +134,11 @@ class DifyClient:
         Returns:
             str: O texto gerado
         """
-        response = self.completion(prompt, **kwargs)
-        
-        if 'choices' in response and len(response['choices']) > 0:
-            return response['choices'][0]['text']
-        else:
-            raise Exception("Resposta da API do Dify não contém texto gerado")
+        try:
+            response = self.completion(prompt, **kwargs)
+            return response["choices"][0]["text"]
+        except Exception as e:
+            raise DifyError(f"Erro ao gerar texto: {str(e)}")
 
     def analyze_text(self, text: str, **kwargs) -> Dict[str, Any]:
         """
@@ -190,7 +152,11 @@ class DifyClient:
             Dict com a análise do texto
         """
         prompt = f"Analise o seguinte texto:\n\n{text}"
-        return self.completion(prompt, **kwargs)
+        try:
+            response = self.completion(prompt, **kwargs)
+            return {"analysis": response["choices"][0]["text"]}
+        except Exception as e:
+            raise DifyError(f"Erro ao analisar texto: {str(e)}")
 
     def generate_image(
         self,
@@ -227,4 +193,4 @@ class DifyClient:
             data = response.json()
             return {"url": data.get("data", [{}])[0].get("url", "")}
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Erro na geração de imagem: {str(e)}") 
+            raise DifyError(f"Erro na geração de imagem: {str(e)}") 

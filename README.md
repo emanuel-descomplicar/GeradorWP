@@ -1,168 +1,99 @@
-# GeradorWP
-
-Sistema automatizado para geração e publicação de conteúdo no WordPress usando CrewAI e Dify.
+# Gerador de Artigos WordPress
 
 ## Descrição
-
-O GeradorWP é uma solução completa para automatizar o processo de criação e publicação de conteúdo em sites WordPress. Utilizando inteligência artificial através da API Dify, o sistema é capaz de:
-
-- Pesquisar e coletar informações relevantes sobre um tópico
-- Gerar conteúdo otimizado para SEO
-- Estruturar artigos seguindo o padrão ACIDA
-- Adicionar links internos e externos
-- Gerar e otimizar imagens
-- Publicar automaticamente no WordPress
+Sistema automatizado para geração e publicação de artigos otimizados para SEO no WordPress, desenvolvido pela Descomplicar.
 
 ## Funcionalidades
-
-- **Pesquisa Automática**
-  - Coleta de informações da web
-  - Análise de conteúdo existente
-  - Identificação de tendências
-  - Coleta de dados estatísticos
-
-- **Geração de Conteúdo**
-  - Estruturação ACIDA
-  - Otimização SEO automática
-  - Densidade de palavras-chave
-  - Call-to-Action (CTA)
-  - Links internos e externos
-
-- **Gestão de Imagens**
-  - Geração com IA
-  - Otimização automática
-  - Redimensionamento
-  - Miniaturas
-  - Compressão inteligente
-
-- **Integração WordPress**
-  - Publicação automática
-  - Gestão de categorias e tags
-  - Upload de mídia
-  - Metadados otimizados
-  - Agendamento de posts
+- Geração de artigos completos com mais de 2000 palavras
+- Otimização SEO automática com Rank Math
+- Geração de imagens destacadas otimizadas
+- Gestão automática de categorias e tags
+- Sistema de cache para imagens
+- Integração completa com WordPress REST API
+- Suporte a metadados SEO personalizados
+- Verificação e validação de conteúdo
 
 ## Requisitos
-
-- Python 3.8 ou superior
-- WordPress com XML-RPC habilitado
-- Conta Dify com API key
-- Dependências listadas em `requirements.txt`
+- Python 3.10 ou superior
+- WordPress com REST API ativada
+- Plugin Rank Math SEO instalado e configurado
+- Acesso de aplicação WordPress configurado
 
 ## Instalação
-
-1. Clone o repositório:
+1. Clone o repositório
 ```bash
 git clone https://github.com/descomplicar/gerador-wp.git
 cd gerador-wp
 ```
 
-2. Crie e ative um ambiente virtual:
+2. Crie e ative o ambiente virtual
 ```bash
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
-venv\Scripts\activate     # Windows
+# ou
+.\venv\Scripts\activate  # Windows
 ```
 
-3. Instale as dependências:
+3. Instale as dependências
 ```bash
-pip install -e .
+pip install -r requirements.txt
 ```
 
-4. Configure as variáveis de ambiente:
+4. Configure as variáveis de ambiente
 ```bash
 cp .env.example .env
 # Edite o arquivo .env com suas configurações
 ```
 
 ## Configuração
+### Variáveis de Ambiente
+- `WP_URL`: URL da API WordPress (ex: https://descomplicar.pt/wp-json)
+- `WP_USERNAME`: Nome de utilizador WordPress
+- `WP_APP_PASSWORD`: Senha de aplicação WordPress
 
-O arquivo `.env` deve conter as seguintes variáveis:
-
-```env
-# Configurações Dify
-DIFY_API_KEY=sua_api_key
-DIFY_API_URL=https://api.dify.ai/v1
-
-# Configurações WordPress
-WP_URL=https://seu-site.com
-WP_USERNAME=seu_usuario
-WP_PASSWORD=sua_senha
-WP_APP_PASSWORD=sua_app_password
-
-# Configurações de Cache
-CACHE_TTL=3600
-CACHE_DIR=.cache
-
-# Configurações de Logging
-LOG_LEVEL=INFO
-LOG_FILE=gerador-wp.log
-
-# Configurações de Conteúdo
-MIN_CONTENT_LENGTH=1000
-MAX_CONTENT_LENGTH=5000
-DEFAULT_CATEGORY=Blog
-DEFAULT_TAGS=
-
-# Configurações de Imagem
-IMAGE_WIDTH=1200
-IMAGE_HEIGHT=630
-IMAGE_QUALITY=90
+### Categorias WordPress
+Configure os IDs corretos das categorias no ficheiro `src/publicar_artigo.py`:
+```python
+categories = [
+    15,  # Marketing Digital
+    17,  # Estratégia Digital
+    19   # Consultoria
+]
 ```
+
+### Metadados SEO
+Os metadados do Rank Math são configurados automaticamente, incluindo:
+- SEO Title
+- Meta Description
+- Focus Keywords
+- Open Graph
+- Twitter Cards
 
 ## Utilização
-
-1. Gerar um artigo:
+Para publicar um novo artigo:
 ```bash
-gerador-wp "Tópico do Artigo" --keywords "palavra1" "palavra2" --category "Marketing"
-```
-
-2. Gerar como rascunho:
-```bash
-gerador-wp "Tópico do Artigo" --draft
-```
-
-3. Especificar tags:
-```bash
-gerador-wp "Tópico do Artigo" --tags "tag1" "tag2"
+python src/publicar_artigo.py
 ```
 
 ## Estrutura do Projeto
-
 ```
-src/
-├── agents/                 # Agentes CrewAI
-│   ├── researcher_agent.py # Pesquisa e coleta
-│   ├── writer_agent.py     # Geração de conteúdo
-│   └── publisher_agent.py  # Publicação WordPress
-├── config/
-│   └── config.py          # Configurações
-└── utils/                 # Utilitários
-    ├── cache.py          # Sistema de cache
-    ├── logger.py         # Sistema de logging
-    ├── http.py           # Cliente HTTP
-    ├── wordpress.py      # Cliente WordPress
-    ├── dify.py           # Cliente Dify
-    ├── seo.py            # Otimização SEO
-    ├── content.py        # Gestão de conteúdo
-    ├── image.py          # Gestão de imagens
-    ├── validation.py     # Validações
-    └── exceptions.py     # Exceções personalizadas
+gerador-wp/
+├── src/
+│   ├── __init__.py
+│   ├── publicar_artigo.py
+│   ├── image_generator.py
+│   └── tests/
+│       └── test_image_generator.py
+├── cache/
+│   └── images/
+├── .env
+├── requirements.txt
+└── README.md
 ```
-
-## Contribuição
-
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/nome`)
-3. Commit suas mudanças (`git commit -am 'Adiciona feature'`)
-4. Push para a branch (`git push origin feature/nome`)
-5. Crie um Pull Request
-
-## Licença
-
-Este projeto está licenciado sob a licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
 
 ## Autor
-
 Descomplicar - Agência de Aceleração Digital
-https://descomplicar.pt 
+https://descomplicar.pt
+
+## Licença
+Proprietária - Todos os direitos reservados 
