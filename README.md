@@ -55,11 +55,41 @@ cp .env.example .env
 Configure os IDs corretos das categorias no ficheiro `src/publicar_artigo.py`:
 ```python
 categories = [
-    15,  # Marketing Digital
-    17,  # Estratégia Digital
-    19   # Consultoria
+    369,  # Blog > Marketing Digital
+    373,  # Blog > Transformação Digital
+    370   # Blog > Vendas
 ]
 ```
+
+### Gerador de Imagens
+O sistema inclui um gerador de imagens destacadas com as seguintes especificações:
+
+#### Configurações de Texto
+- Tamanho da fonte: 55px
+- Fonte: Montserrat Bold
+- Cor: #000000 (preto)
+- Margem superior: 350px
+- Largura máxima: 1000px
+- Espaçamento entre linhas: 15px
+- Máximo de linhas: 5
+
+#### Configurações de Imagem
+- Largura: 1200px
+- Altura: 630px
+- Qualidade: 90
+- DPI: 72
+- Formato: WebP
+
+#### Templates
+Os templates de imagem estão localizados em `gerador_wp/templates/` e incluem:
+- blog-e-commerce.png
+- blog-empreendedorismo.png
+- blog-gestao-pmes.png
+- blog-inteligencia-artificial.png
+- blog-marketing-digital.png
+- blog-tecnologia.png
+- blog-transformacao-digital.png
+- blog-vendas.png
 
 ### Metadados SEO
 Os metadados do Rank Math são configurados automaticamente, incluindo:
@@ -84,6 +114,11 @@ gerador-wp/
 │   ├── image_generator.py
 │   └── tests/
 │       └── test_image_generator.py
+├── gerador_wp/
+│   └── templates/
+│       ├── blog-e-commerce.png
+│       ├── blog-marketing-digital.png
+│       └── ...
 ├── cache/
 │   └── images/
 ├── .env

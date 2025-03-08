@@ -19,6 +19,15 @@ Todas as alterações notáveis neste projeto serão documentadas neste ficheiro
 - Tratamento de erros na API WordPress
 - Formatação de conteúdo HTML
 
+## [0.2.1] - 08-03-2024
+### Alterado
+- Ajustes no gerador de imagens:
+  - Tamanho da letra reduzido de 65px para 55px
+  - Margem superior reduzida de 500px para 350px
+  - Largura máxima do texto aumentada de 800px para 1000px
+- Otimização da estrutura de templates de imagens
+- Melhorias na documentação do sistema
+
 ## [0.2.0] - 08-03-2024
 ### Adicionado
 - Integração com Rank Math SEO

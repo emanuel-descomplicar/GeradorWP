@@ -21,8 +21,8 @@ class ImageManager:
         self.dify = DifyClient()
         
         # Configurações padrão
-        self.width = int(os.getenv('IMAGE_WIDTH', 1200))
-        self.height = int(os.getenv('IMAGE_HEIGHT', 630))
+        self.width = int(os.getenv('IMAGE_WIDTH', 1920))
+        self.height = int(os.getenv('IMAGE_HEIGHT', 1080))
         self.quality = int(os.getenv('IMAGE_QUALITY', 90))
         
     def generate_image(

@@ -22,11 +22,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class ImageGenerator:
-    """Classe para geração de imagens destacadas."""
+    """Classe para gerar imagens destacadas para artigos."""
 
     def __init__(self):
         """Inicializa o gerador de imagens."""
-        self.base_dir = Path(__file__).parent.parent
+        # Configurar diretórios usando caminhos absolutos
+        self.base_dir = Path("/mnt/dados/Cloud/Dev/Scripts/GeradorWP")
         self.templates_dir = self.base_dir / "gerador_wp" / "templates"
         self.cache_dir = self.base_dir / "cache" / "images"
         self.fonts_dir = self.base_dir / "assets" / "fonts"
@@ -35,24 +36,32 @@ class ImageGenerator:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         
         # Configurações de texto
-        self.font_path = self.fonts_dir / "Montserrat-Bold.ttf"
-        self.font_size = 65
-        self.text_color = "#000000"
-        self.text_position = (100, 500)  # x, y (y é CRÍTICO: 500px do topo)
-        self.max_text_width = 850
-        self.line_spacing = 15
-        self.max_lines = 5
+        self.font_bold_path = self.fonts_dir / "Montserrat-Bold.ttf"
+        self.font_regular_path = self.fonts_dir / "Montserrat-Regular.ttf"
+        self.font_size = 65  # Tamanho para o título principal
+        self.subtitle_size = 50  # Tamanho menor para o subtítulo
+        self.text_color = "#1A1A1A"  # Preto suave para melhor contraste
+        self.text_position = (100, 400)  # Margem superior fixa em 400px
+        self.max_text_width = 950  # Largura máxima do texto conforme especificado
+        self.line_spacing = 15  # Espaçamento entre linhas reduzido
+        self.max_lines = 4  # Mantido em 4 linhas
+        self.margin_top = 400  # Margem superior fixa em 400px
 
         # Configurações de imagem
         self.image_width = 1920
         self.image_height = 1080
         self.image_quality = 90
         self.image_dpi = 72
+        self.background_color = (255, 255, 255)  # Branco
 
-        # Carregar fonte
-        if not self.font_path.exists():
-            raise FileNotFoundError(f"Fonte não encontrada: {self.font_path}")
-        self.font = ImageFont.truetype(str(self.font_path), self.font_size)
+        # Carregar fontes
+        if not self.font_bold_path.exists():
+            raise FileNotFoundError(f"Fonte não encontrada: {self.font_bold_path}")
+        if not self.font_regular_path.exists():
+            raise FileNotFoundError(f"Fonte não encontrada: {self.font_regular_path}")
+            
+        self.font_bold = ImageFont.truetype(str(self.font_bold_path), self.font_size)
+        self.font_regular = ImageFont.truetype(str(self.font_regular_path), self.subtitle_size)  # Usando tamanho menor
 
     def get_template_path(self, category: str) -> Path:
         """Obtém o caminho do template para a categoria."""
@@ -258,15 +267,19 @@ class ImageGenerator:
         
         return self.cache_dir / filename
 
-    def wrap_text(self, text: str, draw: ImageDraw, max_width: int) -> list:
+    def wrap_text(self, text: str, draw: ImageDraw, max_width: int, font: ImageFont = None) -> list:
         """Quebra o texto em linhas respeitando a largura máxima."""
         words = text.split()
         lines = []
         current_line = []
         
+        # Se não for especificada uma fonte, usar a fonte bold (para compatibilidade)
+        if font is None:
+            font = self.font_bold
+        
         for word in words:
             current_line.append(word)
-            line_width = draw.textlength(" ".join(current_line), font=self.font)
+            line_width = draw.textlength(" ".join(current_line), font=font)
             
             if line_width > max_width:
                 if len(current_line) == 1:
@@ -303,34 +316,70 @@ class ImageGenerator:
         # Obter caminho do arquivo usando o slug
         image_path = self.get_cache_path(title, category)
         
+        # Se a imagem existir no cache, verificar se tem as dimensões corretas
         if image_path.exists():
-            logger.info(f"Usando imagem em cache: {image_path}")
-            return image_path
+            with Image.open(image_path) as img:
+                if img.size != (self.image_width, self.image_height):
+                    # Se as dimensões estiverem erradas, remover do cache
+                    image_path.unlink()
+                else:
+                    logger.info(f"Usando imagem em cache: {image_path}")
+                    return image_path
 
         # Carregar template
         template_path = self.get_template_path(category)
+        logger.info(f"Usando template: {template_path}")
+        
         with Image.open(template_path) as img:
-            # Redimensionar para 1920x1080
-            img = img.resize((self.image_width, self.image_height))
+            # Redimensionar para 1920x1080 usando LANCZOS para melhor qualidade
+            img = img.resize((self.image_width, self.image_height), Image.LANCZOS)
             
             # Criar objeto de desenho
             draw = ImageDraw.Draw(img)
             
-            # Quebrar texto em linhas
-            lines = self.wrap_text(title, draw, self.max_text_width)
+            # Separar o título em duas partes se contiver ":"
+            if ":" in title:
+                main_title, subtitle = title.split(":", 1)
+                subtitle = subtitle.strip()
+            else:
+                main_title = title
+                subtitle = None
             
-            # Desenhar cada linha
-            y = self.text_position[1]  # CRÍTICO: 500px do topo
-            for line in lines:
+            # Começar da posição inicial
+            y = self.text_position[1]
+            
+            # Primeiro desenhar o título principal em fonte bold
+            main_lines = self.wrap_text(main_title, draw, self.max_text_width, self.font_bold)
+            
+            # Desenhar linhas do título principal
+            for line in main_lines:
                 draw.text(
                     (self.text_position[0], y),
                     line,
-                    font=self.font,
+                    font=self.font_bold,
                     fill=self.text_color
                 )
                 y += self.font_size + self.line_spacing
             
-            # Salvar em WebP
+            # Se houver subtítulo, desenhar com fonte regular menor
+            if subtitle:
+                # Adicionar espaçamento extra antes do subtítulo
+                y += 20  # Espaçamento entre título e subtítulo
+                
+                # Quebrar subtítulo em linhas usando a fonte menor
+                sub_lines = self.wrap_text(subtitle, draw, self.max_text_width, self.font_regular)
+                
+                # Desenhar subtítulo
+                for line in sub_lines:
+                    draw.text(
+                        (self.text_position[0], y),
+                        line,
+                        font=self.font_regular,
+                        fill=self.text_color
+                    )
+                    y += self.subtitle_size + self.line_spacing
+            
+            # Salvar em WebP com as dimensões corretas
             img.save(
                 image_path,
                 'WEBP',
@@ -338,7 +387,13 @@ class ImageGenerator:
                 dpi=(self.image_dpi, self.image_dpi)
             )
             
-            logger.info(f"Imagem gerada: {image_path}")
+            # Verificar dimensões finais
+            with Image.open(image_path) as final_img:
+                if final_img.size != (self.image_width, self.image_height):
+                    logger.error(f"Dimensões incorretas após salvar: {final_img.size}")
+                    raise ValueError(f"Imagem não foi salva com as dimensões corretas: {final_img.size}")
+            
+            logger.info(f"Imagem gerada com sucesso: {image_path} ({self.image_width}x{self.image_height})")
             return image_path
 
     def get_text_box_position(self, image_path: Path) -> Dict[str, int]:
