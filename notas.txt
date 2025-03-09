@@ -1,0 +1,19 @@
+Em relaçao ao prompt:
+verifica nesta pasta como está a ser construido o template dos artigos... pode ter dicas para melhorar. o que está atualmente está interessante, mas poderá ser melhorado. Devemos utilizar a API da Dify. ela tem uma vasta Base de Conhecimento especializado que deve ser utilizado.
+
+Estudos de caso verdadeiros podem ser incorporados. Mas têm que ser verdadeiros.
+
+precisamos de melhorar as informações que estão a ser passadas sobre os serviços da Descomplicar, para conseguir sugerir o que for mais adequado ao publico especifico que procura pelo tema.
+
+Também gostaria de incluir uma CTA box antes do desenvolvimento do artigo: "Se procura uma solução para (tema) a Descomplicar pode ajudar com
+- serviço a: para resolver estes problemas
+- serviço b: para trazer estas soluções
+- serviço c: para criar estes resultados.
+
+A CTA box 1 deverá ter um fundo #f2d9a2 com links para marcar reunião, pedir um orçamento ou entrar em contacto.
+@https://descomplicar.pt/marcar-reuniao/ 
+@https://descomplicar.pt/pedido-de-orcamento/ 
+@https://descomplicar.pt/contacto/ 
+
+Estes links também devem ser introduzidos num texto natural, no final do artigo, numa CTA box 2
+

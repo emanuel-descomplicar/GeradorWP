@@ -1,215 +1,182 @@
 """
-Prompts - Templates de prompts para os agentes
+Prompts para os agentes do GeradorWP.
 
-Este módulo contém os templates de prompts utilizados pelos agentes do sistema,
-facilitando a centralização e manutenção dos mesmos.
-
-Autor: Descomplicar - Agência de Aceleração Digital
-https://descomplicar.pt
+/**
+ * Autor: Descomplicar - Agência de Aceleração Digital
+ * https://descomplicar.pt
+ */
 """
 
-import os
-from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, List
 
-# Caminho para o diretório de prompts
-PROMPTS_DIR = Path(os.path.dirname(os.path.abspath(__file__))) / '..' / 'prompts'
+# Prompt base para o ResearcherAgent
+RESEARCHER_PROMPT = """
+Você é um agente especializado em pesquisa e análise de conteúdo para artigos de marketing digital.
+Sua tarefa é coletar informações relevantes e verificáveis sobre o tema "{topic}" para criar um artigo de alta qualidade.
 
-# Prompts para o ResearcherAgent
-RESEARCH_PROMPTS = {
-    "search_topic": """
-    Realiza uma pesquisa completa sobre o tópico: {topic}.
-    
-    Foca nos seguintes aspectos:
-    - Definição e conceitos-chave
-    - Estatísticas e factos relevantes para o mercado português
-    - Tendências atuais em Portugal
-    - Desafios e oportunidades
-    - Melhores práticas
-    - Exemplos de casos de sucesso
-    
-    Palavras-chave relacionadas:
-    {keywords}
-    
-    Mantém o foco no contexto português e europeu, privilegiando exemplos e estatísticas locais.
-    Valoriza fontes credíveis e atualizadas.
-    """,
-    
-    "analyze_sources": """
-    Analisa as seguintes fontes de informação sobre o tópico {topic}:
-    
-    {sources}
-    
-    Para cada fonte, extrai:
-    1. Principais factos e estatísticas
-    2. Argumentos e insights relevantes
-    3. Exemplos e casos práticos
-    4. Credibilidade da fonte (alta, média, baixa)
-    
-    Organiza a informação por relevância e credibilidade.
-    Identifica contradições ou informações inconsistentes entre as fontes.
-    """
+REQUISITOS DE PESQUISA:
+1. Coletar dados estatísticos recentes do mercado português/europeu
+2. Identificar tendências atuais e futuras
+3. Encontrar exemplos práticos e casos de estudo
+4. Localizar fontes confiáveis e verificáveis
+5. Identificar palavras-chave relevantes e suas variações
+
+FONTES PRIORITÁRIAS:
+- INE (https://www.ine.pt)
+- PORDATA (https://www.pordata.pt)
+- Eurostat (https://ec.europa.eu/eurostat)
+- Banco de Portugal (https://www.bportugal.pt)
+- IAPMEI (https://www.iapmei.pt)
+
+FORMATO DE SAÍDA:
+1. Dados estatísticos relevantes
+2. Tendências identificadas
+3. Exemplos práticos
+4. Fontes verificáveis
+5. Palavras-chave principais e secundárias
+"""
+
+# Prompt base para o WriterAgent
+WRITER_PROMPT = """
+Você é um agente especializado em criar conteúdo de marketing digital em português europeu.
+Sua tarefa é criar um artigo completo sobre "{topic}" usando as informações fornecidas pelo ResearcherAgent.
+
+ESTRUTURA ACIDA:
+
+1. ATENÇÃO (300-400 palavras)
+- Título H1 otimizado para SEO
+- Estatística impactante do mercado português
+- Contextualização do problema/oportunidade
+- Valor para o leitor
+- Links internos e externos relevantes
+
+2. CONFIANÇA (500-600 palavras)
+- Dados verificáveis de fontes oficiais
+- Citações de estudos e relatórios
+- Análise de tendências
+- Listas de pontos-chave
+- Links para recursos relevantes
+
+3. INTERESSE (500-600 palavras)
+- Explicação detalhada de conceitos
+- Exemplos práticos para empresas portuguesas
+- Benefícios tangíveis
+- Processos e passos
+- Casos de estudo
+
+4. DECISÃO (400-500 palavras)
+- Critérios de avaliação
+- Comparação de abordagens
+- Análise de custos/benefícios
+- Considerações sobre desafios
+- Recursos necessários
+
+5. AÇÃO (300-400 palavras)
+- Resumo dos pontos principais
+- Próximos passos
+- CTA formatado
+- Links para recursos adicionais
+
+REQUISITOS DE QUALIDADE:
+- Mínimo de 2000 palavras
+- Português europeu autêntico
+- Densidade de palavras-chave: 0.5-5.0%
+- Links internos e externos
+- Estrutura HTML adequada
+- CTA formatado corretamente
+
+FORMATO DO CTA:
+<div class="cta-box">
+    <h3>Precisa de ajuda com {topic}?</h3>
+    <p>A <a href="https://descomplicar.pt">Descomplicar</a> oferece serviços especializados em {related_topic} para empresas portuguesas. Os nossos especialistas podem ajudar a sua empresa a:</p>
+    <ul>
+        <li>{benefit_1}</li>
+        <li>{benefit_2}</li>
+        <li>{benefit_3}</li>
+    </ul>
+    <p><strong>Agende uma consulta gratuita</strong> e descubra como podemos ajudar a sua empresa a implementar {topic} com sucesso.</p>
+    <div class="cta-buttons">
+        <a href="https://descomplicar.pt/marcar-reuniao" class="btn btn-primary">Agendar Consulta Gratuita</a>
+        <a href="https://descomplicar.pt/pedido-de-orcamento" class="btn btn-secondary">Solicitar Orçamento</a>
+        <a href="https://descomplicar.pt/contacto" class="btn btn-secondary">Entrar em Contacto</a>
+    </div>
+</div>
+"""
+
+# Prompt base para o PublisherAgent
+PUBLISHER_PROMPT = """
+Você é um agente especializado em publicar conteúdo no WordPress com otimização SEO.
+Sua tarefa é publicar o artigo gerado pelo WriterAgent, garantindo que todos os requisitos técnicos sejam atendidos.
+
+REQUISITOS DE PUBLICAÇÃO:
+1. Verificar e criar categorias necessárias
+2. Validar e criar tags relevantes
+3. Configurar metadados SEO
+4. Garantir formatação HTML correta
+5. Verificar links internos e externos
+6. Configurar imagem destacada
+7. Validar estrutura ACIDA
+
+METADADOS SEO:
+- Título otimizado
+- Meta descrição
+- Palavras-chave
+- URL amigável
+- Texto alternativo da imagem
+
+VALIDAÇÕES:
+- Conteúdo em português europeu
+- Links funcionais
+- Imagens otimizadas
+- Estrutura HTML válida
+- Metadados completos
+"""
+
+# Dicionário de prompts por agente
+AGENT_PROMPTS: Dict[str, str] = {
+    "researcher": RESEARCHER_PROMPT,
+    "writer": WRITER_PROMPT,
+    "publisher": PUBLISHER_PROMPT
 }
 
-# Prompts para o WriterAgent
-WRITING_PROMPTS = {
-    "create_outline": """
-    Cria uma estrutura ACIDA detalhada para um artigo sobre {topic}.
-    
-    O artigo deve seguir esta estrutura:
-    
-    1. ATTENTION (Atenção) - 250 palavras
-    - Estatística impactante sobre {topic} em Portugal
-    - Contexto atual do mercado português
-    - Pergunta retórica que desperte o interesse
-    
-    2. CONFIDENCE (Confiança) - 450 palavras
-    - Dados e fontes respeitáveis sobre {topic}
-    - Citações de especialistas portugueses
-    - Referências a instituições portuguesas
-    
-    3. INTEREST (Interesse) - 550 palavras
-    - Benefícios tangíveis de {topic}
-    - Exemplos práticos do mercado português
-    - Casos de estudo relevantes
-    
-    4. DECISION (Decisão) - 450 palavras
-    - Passos concretos para implementar {topic}
-    - Recursos necessários
-    - Considerações específicas para o mercado português
-    
-    5. ACTION (Ação) - 175 palavras
-    - Conclusão persuasiva
-    - Call-to-action claro
-    - Próximos passos
-    
-    Usa os dados da pesquisa para fundamentar cada secção:
-    {research_summary}
-    
-    Palavras-chave a incluir: {keywords}
-    """,
-    
-    "generate_section": """
-    Escreve a secção {section_name} (modelo ACIDA) do artigo sobre {topic}.
-    
-    Objetivo desta secção:
-    {section_goal}
-    
-    Elementos a incluir:
-    {section_elements}
-    
-    Número aproximado de palavras: {section_word_count}
-    
-    Dados relevantes da pesquisa:
-    {section_research}
-    
-    Palavras-chave a incluir naturalmente: {keywords}
-    
-    Escreve no estilo:
-    - Português de Portugal (não brasileiro)
-    - Tom conversacional mas profissional
-    - Frases diretas e de fácil compreensão
-    - Parágrafos curtos (4-5 linhas máximo)
-    - Escrita envolvente e persuasiva
-    
-    Formato: HTML com cabeçalhos apropriados (h2, h3) e formatação (strong, ul, ol) quando relevante.
-    """
-}
+# Lista de fontes confiáveis
+TRUSTED_SOURCES: List[str] = [
+    "https://www.ine.pt",
+    "https://www.pordata.pt",
+    "https://ec.europa.eu/eurostat",
+    "https://www.bportugal.pt",
+    "https://www.iapmei.pt",
+    "https://www.gartner.com",
+    "https://www.mckinsey.com",
+    "https://www2.deloitte.com",
+    "https://www.pwc.pt",
+    "https://www.weforum.org"
+]
 
-# Prompts para o PublisherAgent
-PUBLISHING_PROMPTS = {
-    "format_content": """
-    Formata o seguinte conteúdo para publicação no WordPress:
-    
-    {content}
-    
-    Aplica estas otimizações:
-    1. Verifica e corrige a estrutura HTML
-    2. Adiciona cabeçalhos (h2, h3) de forma hierárquica
-    3. Otimiza para leitura (parágrafos curtos, listas, destaques)
-    4. Adiciona alt text em imagens
-    5. Verifica links internos/externos
-    6. Sugere pontos para adicionar imagens
-    
-    O resultado deve estar pronto para publicação no WordPress, seguindo as melhores práticas de SEO.
-    """,
-    
-    "prepare_seo_meta": """
-    Prepara os metadados SEO para o seguinte artigo sobre {topic}:
-    
-    Título: {title}
-    Resumo: {excerpt}
-    
-    Gera:
-    1. Meta description otimizada (150-160 caracteres)
-    2. Slug URL (em português, sem acentos)
-    3. Focus keyword principal
-    4. 5-8 tags relevantes (em português)
-    5. Título SEO otimizado (se diferente do título original)
-    
-    Considera estas palavras-chave:
-    {keywords}
-    """
-}
+# Lista de palavras a evitar (brasileirismos)
+WORDS_TO_AVOID: List[str] = [
+    "você",
+    "conosco",
+    "legal",
+    "bacana",
+    "grana",
+    "tchau",
+    "né",
+    "tá",
+    "pra",
+    "pro"
+]
 
-def load_prompt_from_file(filename: str) -> str:
-    """
-    Carrega um prompt de um arquivo.
-    
-    Args:
-        filename: Nome do arquivo (com extensão) no diretório de prompts
-        
-    Returns:
-        Conteúdo do arquivo como string
-    """
-    try:
-        prompt_path = PROMPTS_DIR / filename
-        if not prompt_path.exists():
-            return ""
-        
-        with open(prompt_path, 'r', encoding='utf-8') as f:
-            return f.read()
-            
-    except Exception as e:
-        print(f"Erro ao carregar prompt de {filename}: {str(e)}")
-        return ""
-
-# Carrega prompts de arquivos, se disponíveis
-CONTENT_GENERATION_PROMPT = load_prompt_from_file("content_generation_prompt.md")
-
-def get_prompt(prompt_key: str, prompt_vars: Dict[str, Any] = None) -> str:
-    """
-    Obtém um prompt por chave e formata com variáveis.
-    
-    Args:
-        prompt_key: Chave do prompt (ex: "research.search_topic")
-        prompt_vars: Variáveis para formatação do prompt
-        
-    Returns:
-        Prompt formatado
-    """
-    prompt_vars = prompt_vars or {}
-    
-    # Resolver caminho da chave (ex: "research.search_topic" -> RESEARCH_PROMPTS["search_topic"])
-    parts = prompt_key.split('.')
-    
-    if len(parts) == 1:
-        # Prompt direto (ex: "CONTENT_GENERATION_PROMPT")
-        prompt_template = globals().get(prompt_key, "")
-    elif len(parts) == 2:
-        # Prompt em dicionário (ex: "research.search_topic")
-        category, key = parts
-        prompts_dict = globals().get(f"{category.upper()}_PROMPTS", {})
-        prompt_template = prompts_dict.get(key, "")
-    else:
-        prompt_template = ""
-    
-    # Se encontrou o template, formatar com as variáveis
-    if prompt_template and prompt_vars:
-        try:
-            return prompt_template.format(**prompt_vars)
-        except KeyError as e:
-            print(f"Erro ao formatar prompt, variável em falta: {str(e)}")
-            return prompt_template
-    
-    return prompt_template 
+# Lista de substituições para português europeu
+EUROPEAN_PORTUGUESE_REPLACEMENTS: Dict[str, str] = {
+    "você": "o utilizador",
+    "conosco": "connosco",
+    "legal": "ótimo",
+    "bacana": "excelente",
+    "grana": "dinheiro",
+    "tchau": "adeus",
+    "né": "não é",
+    "tá": "está",
+    "pra": "para",
+    "pro": "para o"
+} 

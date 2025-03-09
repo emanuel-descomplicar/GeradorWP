@@ -1,263 +1,324 @@
 """
-WordPress - Cliente WordPress para integração com o CMS
-
-Este módulo fornece uma classe para interagir com o WordPress via XML-RPC,
-incluindo publicação de conteúdo, upload de imagens e mais.
-
-Autor: Descomplicar - Agência de Aceleração Digital
-https://descomplicar.pt
+Utilitários para integração com o WordPress.
 """
 
 import os
-import logging
-from typing import Dict, List, Any, Optional, Tuple, BinaryIO
-from urllib.parse import urlparse
-from dotenv import load_dotenv
-from wordpress_xmlrpc import Client, WordPressPost, methods
-from wordpress_xmlrpc.methods import posts, media
-from wordpress_xmlrpc.compat import xmlrpc_client
+import json
+import requests
+from typing import Dict, List, Optional, Union
+from pathlib import Path
+from .exceptions import WordPressError
+from .logger import Logger
+from ..config.config import (
+    WP_URL,
+    WP_USERNAME,
+    WP_APP_PASSWORD,
+    DEFAULT_CATEGORY,
+    DEFAULT_TAGS
+)
 
-class WordPress:
-    """
-    Cliente WordPress para interação com o CMS via XML-RPC.
+class WordPressClient:
+    """Cliente para integração com o WordPress."""
     
-    Esta classe fornece métodos para realizar operações comuns no WordPress,
-    como publicar artigos, fazer upload de imagens, e mais.
-    """
+    def __init__(self):
+        """Inicializa o cliente WordPress."""
+        self.logger = Logger(__name__)
+        
+        # Configurar URL base da API
+        self.api_url = f"{WP_URL}/wp-json/wp/v2"
+        
+        # Configurar autenticação
+        self.auth = (WP_USERNAME, WP_APP_PASSWORD)
+        
+        # Cache de categorias
+        self._categories = {}
+        
+        # Cache de tags
+        self._tags = {}
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def get_category_id(self, category_name: str) -> int:
         """
-        Inicializa o cliente WordPress.
+        Obtém o ID de uma categoria pelo nome.
+        Se a categoria não existir, ela será criada.
         
         Args:
-            config: Configurações opcionais para o cliente (url, username, password)
+            category_name: Nome da categoria
+            
+        Returns:
+            ID da categoria
         """
-        self.logger = logging.getLogger(__name__)
-        self.config = config or {}
-        
-        # Carregar variáveis de ambiente
-        load_dotenv()
-        
-        # Configurações do WordPress
-        self.wp_url = self.config.get("wp_url") or os.getenv("WP_URL")
-        self.wp_username = self.config.get("wp_username") or os.getenv("WP_USERNAME")
-        self.wp_password = self.config.get("wp_password") or os.getenv("WP_PASSWORD") or os.getenv("WP_APP_PASSWORD")
-        
-        if not all([self.wp_url, self.wp_username, self.wp_password]):
-            self.logger.error("Configurações do WordPress incompletas. Verifique as variáveis de ambiente.")
-            raise ValueError("Configurações do WordPress incompletas")
-        
-        # Preparar URL do XML-RPC
-        parsed_url = urlparse(self.wp_url)
-        self.xmlrpc_url = f"{parsed_url.scheme}://{parsed_url.netloc}/xmlrpc.php"
-        
-        # Inicializar cliente
         try:
-            self.client = Client(self.xmlrpc_url, self.wp_username, self.wp_password)
-            self.logger.info(f"Cliente WordPress inicializado para {self.wp_url}")
+            # Verificar cache
+            if category_name in self._categories:
+                return self._categories[category_name]
+            
+            # Buscar todas as categorias
+            response = requests.get(f"{self.api_url}/categories", auth=self.auth)
+            response.raise_for_status()
+            
+            # Atualizar cache
+            categories = response.json()
+            for category in categories:
+                self._categories[category['name']] = category['id']
+            
+            # Retornar ID da categoria se existir
+            if category_name in self._categories:
+                return self._categories[category_name]
+            
+            # Criar categoria se não existir
+            response = requests.post(
+                f"{self.api_url}/categories",
+                auth=self.auth,
+                json={
+                    'name': category_name,
+                    'slug': category_name.lower().replace(' ', '-')
+                }
+            )
+            response.raise_for_status()
+            
+            # Atualizar cache
+            category = response.json()
+            self._categories[category['name']] = category['id']
+            
+            return category['id']
+            
         except Exception as e:
-            self.logger.error(f"Erro ao inicializar cliente WordPress: {str(e)}")
+            self.logger.log_error(e, f"Erro ao buscar/criar categoria: {category_name}")
             raise
     
-    def publish_post(self, title: str, content: str, excerpt: str = "", 
-                    categories: List[str] = None, tags: List[str] = None, 
-                    featured_image_id: int = None, status: str = "draft",
-                    meta: Dict[str, str] = None) -> Dict[str, Any]:
+    def get_category_name(self, category_id: int) -> str:
         """
-        Publica um post no WordPress.
+        Obtém o nome de uma categoria pelo ID.
+        
+        Args:
+            category_id: ID da categoria
+            
+        Returns:
+            Nome da categoria
+        """
+        try:
+            # Buscar categoria
+            response = requests.get(f"{self.api_url}/categories/{category_id}", auth=self.auth)
+            response.raise_for_status()
+            
+            # Retornar nome
+            category = response.json()
+            return category['name']
+            
+        except Exception as e:
+            self.logger.log_error(e, f"Erro ao buscar nome da categoria: {category_id}")
+            raise
+    
+    def get_tag_name(self, tag_id: int) -> str:
+        """
+        Obtém o nome de uma tag pelo ID.
+        
+        Args:
+            tag_id: ID da tag
+            
+        Returns:
+            Nome da tag
+        """
+        try:
+            # Buscar tag
+            response = requests.get(f"{self.api_url}/tags/{tag_id}", auth=self.auth)
+            response.raise_for_status()
+            
+            # Retornar nome
+            tag = response.json()
+            return tag['name']
+            
+        except Exception as e:
+            self.logger.log_error(e, f"Erro ao buscar nome da tag: {tag_id}")
+            raise
+    
+    def create_post(
+        self,
+        title: str,
+        content: str,
+        excerpt: Optional[str] = None,
+        status: str = "draft",
+        category: Optional[str] = None,
+        category_id: Optional[int] = None,
+        tags: Optional[List[str]] = None,
+        featured_image: Optional[Union[str, Path]] = None
+    ) -> Dict:
+        """
+        Cria um novo post no WordPress.
         
         Args:
             title: Título do post
-            content: Conteúdo HTML do post
+            content: Conteúdo do post
             excerpt: Resumo do post
-            categories: Lista de categorias (nomes)
+            status: Status do post (draft, publish, private)
+            category: Nome da categoria do post
+            category_id: ID da categoria do post
             tags: Lista de tags
-            featured_image_id: ID da imagem destacada
-            status: Status do post (draft, publish, etc.)
-            meta: Metadados personalizados
+            featured_image: URL ou caminho da imagem destacada
             
         Returns:
-            Um dicionário com o resultado da publicação
+            Dados do post criado
         """
-        self.logger.info(f"Publicando post: {title}")
-        
         try:
-            # Criar objeto post
-            post = WordPressPost()
-            post.title = title
-            post.content = content
-            post.excerpt = excerpt
-            post.terms_names = {
-                'category': categories or [],
-                'post_tag': tags or []
-            }
-            post.post_status = status
-            
-            # Adicionar imagem destacada se fornecida
-            if featured_image_id:
-                post.thumbnail = featured_image_id
-            
-            # Adicionar metadados se fornecidos
-            if meta:
-                post.custom_fields = []
-                for key, value in meta.items():
-                    post.custom_fields.append({
-                        'key': key,
-                        'value': value
-                    })
-            
-            # Publicar post
-            post_id = self.client.call(posts.NewPost(post))
-            
-            # Obter URL do post
-            post_data = self.client.call(posts.GetPost(post_id))
-            
-            result = {
-                "id": post_id,
-                "title": title,
-                "status": status,
-                "link": getattr(post_data, "link", None)
+            # Preparar dados do post
+            post_data = {
+                'title': title,
+                'content': content,
+                'excerpt': excerpt or "",
+                'status': status,
+                'categories': []
             }
             
-            self.logger.info(f"Post publicado com sucesso. ID: {post_id}")
-            return result
+            # Define a categoria
+            if category_id:
+                post_data['categories'].append(category_id)
+            elif category:
+                category_id = self.get_category_id(category)
+                post_data['categories'].append(category_id)
+            else:
+                category_id = self.get_category_id(DEFAULT_CATEGORY)
+                post_data['categories'].append(category_id)
+            
+            # Define as tags
+            if tags:
+                post_data['tags'] = self._create_tags(tags)
+            else:
+                post_data['tags'] = self._create_tags(DEFAULT_TAGS)
+            
+            # Faz upload da imagem destacada
+            if featured_image:
+                post_data['featured_media'] = self._upload_image(featured_image)
+            
+            # Publica o post
+            response = requests.post(
+                f"{self.api_url}/posts",
+                auth=self.auth,
+                json=post_data
+            )
+            response.raise_for_status()
+            
+            # Recupera os dados do post
+            post_data = response.json()
+            
+            self.logger.info(f"Post criado com sucesso: {title}")
+            return self._format_post_data(post_data)
             
         except Exception as e:
-            self.logger.error(f"Erro ao publicar post: {str(e)}")
-            return {"error": str(e)}
+            self.logger.log_error(e, f"Erro ao criar post: {title}")
+            raise
     
-    def upload_image(self, image_path: str, alt_text: str = "", title: str = None) -> Dict[str, Any]:
+    def _create_tags(self, tags: List[str]) -> List[int]:
         """
-        Faz upload de uma imagem para a biblioteca de mídia do WordPress.
+        Cria ou obtém IDs das tags.
         
         Args:
-            image_path: Caminho local para a imagem
-            alt_text: Texto alternativo da imagem
-            title: Título da imagem (se None, usa o nome do arquivo)
+            tags: Lista de nomes de tags
             
         Returns:
-            Um dicionário com o resultado do upload
+            Lista de IDs das tags
         """
-        self.logger.info(f"Fazendo upload da imagem: {image_path}")
-        
         try:
+            tag_ids = []
+            
+            for tag_name in tags:
+                # Criar tag
+                response = requests.post(
+                    f"{self.api_url}/tags",
+                    auth=self.auth,
+                    json={'name': tag_name}
+                )
+                
+                # Se a tag já existe, usar o ID existente
+                if response.status_code == 400:
+                    # Buscar tag existente
+                    response = requests.get(
+                        f"{self.api_url}/tags",
+                        auth=self.auth,
+                        params={'search': tag_name}
+                    )
+                    response.raise_for_status()
+                    
+                    tags = response.json()
+                    if tags:
+                        tag_ids.append(tags[0]['id'])
+                else:
+                    response.raise_for_status()
+                    tag_ids.append(response.json()['id'])
+            
+            return tag_ids
+            
+        except Exception as e:
+            self.logger.log_error(e, f"Erro ao criar tags: {tags}")
+            raise
+    
+    def _upload_image(self, image_path: Union[str, Path]) -> int:
+        """
+        Faz upload de uma imagem.
+        
+        Args:
+            image_path: Caminho da imagem
+            
+        Returns:
+            ID da imagem no WordPress
+        """
+        try:
+            # Converter para Path
+            image_path = Path(image_path)
+            
             # Verificar se o arquivo existe
-            if not os.path.exists(image_path):
-                raise FileNotFoundError(f"Arquivo não encontrado: {image_path}")
-            
-            # Determinar tipo de imagem
-            filename = os.path.basename(image_path)
-            title = title or os.path.splitext(filename)[0]
-            
-            # Preparar dados para upload
-            with open(image_path, "rb") as img:
-                data = {
-                    "name": filename,
-                    "type": self._get_mimetype(filename),
-                    "bits": xmlrpc_client.Binary(img.read()),
-                    "caption": alt_text,
-                    "title": title,
-                    "alt": alt_text
-                }
+            if not image_path.exists():
+                raise FileNotFoundError(f"Imagem não encontrada: {image_path}")
             
             # Fazer upload
-            response = self.client.call(media.UploadFile(data))
-            
-            result = {
-                "id": response["id"],
-                "title": title,
-                "url": response["url"],
-                "alt_text": alt_text
-            }
-            
-            self.logger.info(f"Imagem enviada com sucesso. ID: {response['id']}")
-            return result
-            
-        except Exception as e:
-            self.logger.error(f"Erro ao fazer upload da imagem: {str(e)}")
-            return {"error": str(e)}
-    
-    def get_categories(self) -> List[Dict[str, Any]]:
-        """
-        Obtém a lista de categorias disponíveis no WordPress.
-        
-        Returns:
-            Uma lista de dicionários com informações sobre as categorias
-        """
-        self.logger.info("Obtendo lista de categorias")
-        
-        try:
-            categories = self.client.call(methods.taxonomies.GetTerms('category'))
-            
-            result = [
-                {
-                    "id": cat.id,
-                    "name": cat.name,
-                    "slug": cat.slug,
-                    "description": cat.description,
-                    "parent": cat.parent
+            with open(image_path, 'rb') as img:
+                files = {
+                    'file': (image_path.name, img, 'image/webp')
                 }
-                for cat in categories
-            ]
+                
+                response = requests.post(
+                    f"{self.api_url}/media",
+                    auth=self.auth,
+                    files=files
+                )
+                response.raise_for_status()
             
-            self.logger.info(f"Obtidas {len(result)} categorias")
-            return result
-            
-        except Exception as e:
-            self.logger.error(f"Erro ao obter categorias: {str(e)}")
-            return []
-    
-    def get_post(self, post_id: int) -> Optional[Dict[str, Any]]:
-        """
-        Obtém informações de um post específico.
-        
-        Args:
-            post_id: ID do post
-            
-        Returns:
-            Um dicionário com as informações do post ou None se não encontrado
-        """
-        self.logger.info(f"Obtendo informações do post ID: {post_id}")
-        
-        try:
-            post = self.client.call(posts.GetPost(post_id))
-            
-            result = {
-                "id": post.id,
-                "title": post.title,
-                "status": post.post_status,
-                "link": post.link,
-                "date": post.date,
-                "modified": post.modified
-            }
-            
-            self.logger.info(f"Post obtido com sucesso: {post.title}")
-            return result
+            return response.json()['id']
             
         except Exception as e:
-            self.logger.error(f"Erro ao obter post {post_id}: {str(e)}")
-            return None
+            self.logger.log_error(e, f"Erro ao fazer upload da imagem: {image_path}")
+            raise
     
-    def _get_mimetype(self, filename: str) -> str:
+    def _format_post_data(self, post_data: Dict) -> Dict:
         """
-        Determina o mimetype de um arquivo baseado em sua extensão.
+        Formata os dados do post.
         
         Args:
-            filename: Nome do arquivo
+            post_data: Dados do post
             
         Returns:
-            O mimetype correspondente
+            Dados formatados do post
         """
-        ext = os.path.splitext(filename)[1].lower()
-        
-        mimetypes = {
-            '.jpg': 'image/jpeg',
-            '.jpeg': 'image/jpeg',
-            '.png': 'image/png',
-            '.gif': 'image/gif',
-            '.webp': 'image/webp',
-            '.svg': 'image/svg+xml',
-            '.pdf': 'application/pdf'
+        data = {
+            'id': post_data.get('id'),
+            'title': post_data.get('title', {}).get('rendered', ''),
+            'content': post_data.get('content', {}).get('rendered', ''),
+            'excerpt': post_data.get('excerpt', {}).get('rendered', ''),
+            'status': post_data.get('status', ''),
+            'date': post_data.get('date'),
+            'modified': post_data.get('modified'),
+            'slug': post_data.get('slug', ''),
+            'link': post_data.get('link', ''),
+            'categories': post_data.get('categories', []),
+            'tags': post_data.get('tags', []),
+            'thumbnail': post_data.get('featured_media')
         }
         
-        return mimetypes.get(ext, 'application/octet-stream') 
+        # Adicionar nomes das categorias e tags
+        if data['categories']:
+            data['category_name'] = self.get_category_name(data['categories'][0])
+        
+        if data['tags']:
+            data['tag_names'] = [self.get_tag_name(tag_id) for tag_id in data['tags']]
+        
+        # Remover campos None
+        return {k: v for k, v in data.items() if v is not None} 

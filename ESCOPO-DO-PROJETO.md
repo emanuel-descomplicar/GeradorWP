@@ -73,33 +73,56 @@ Tópico → Research → Write → Validate → Publish → WordPress
 ```
 
 ### 4. Modelo de Conteúdo ACIDA
+- **Pre-Content CTA Box**
+  - Fundo: #f2d9a2
+  - Formato: "Se procura uma solução para [tema] a Descomplicar pode ajudar com:"
+  - Lista de serviços relevantes personalizados
+  - Links de ação:
+    - https://descomplicar.pt/marcar-reuniao/
+    - https://descomplicar.pt/pedido-de-orcamento/
+    - https://descomplicar.pt/contacto/
+
 - **Attention**: Capte a atenção (200-300 palavras)
   - Estatísticas impactantes
   - Contexto português
   - Perguntas retóricas
+  - Estudos de caso reais validados
 
 - **Confidence**: Estabeleça credibilidade (400-500 palavras)
   - Dados e fontes respeitáveis
   - Citações de especialistas
   - Referências a instituições portuguesas
+  - Base de Conhecimento Dify
 
 - **Interest**: Desperte interesse (500-600 palavras)
   - Benefícios tangíveis
   - Exemplos práticos
-  - Casos de estudo
+  - Casos de estudo reais
+  - Serviços Descomplicar relevantes
 
 - **Decision**: Ajude na tomada de decisão (400-500 palavras)
   - Passos concretos
   - Recursos necessários
   - Considerações específicas
+  - Soluções Descomplicar aplicáveis
 
 - **Action**: Motive à ação (150-200 palavras)
   - Conclusão persuasiva
-  - CTA claro
+  - CTA natural com links relevantes
   - Próximos passos
+  - CTA Box final com links contextualizados
 
 ### 5. Requisitos de Qualidade
 - Mínimo de 2000 palavras por artigo
+- Validação automática de:
+  - Contagem total de palavras
+  - Contagem por seção ACIDA
+  - Presença de CTAs e links
+  - Relevância dos serviços sugeridos
+- Integração com API Dify para:
+  - Base de Conhecimento especializada
+  - Validação de informações
+  - Personalização de conteúdo
 - Otimização SEO completa
 - Links internos e externos relevantes
 - Imagem destacada personalizada
@@ -114,6 +137,10 @@ Tópico → Research → Write → Validate → Publish → WordPress
 - Validação de imagens
 - Verificação de metadados SEO
 - Validação de estrutura ACIDA
+- Verificação de CTAs e links
+- Validação de estudos de caso
+- Verificação de integração Dify
+- Validação de serviços sugeridos
 - Verificação de naturalidade do texto
 
 ## Lições Aprendidas e Melhorias

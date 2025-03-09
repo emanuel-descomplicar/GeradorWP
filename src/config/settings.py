@@ -1,274 +1,118 @@
 """
-Settings - Configurações do projeto
+Configurações do projeto GeradorWP.
 
-Este módulo fornece acesso centralizado a todas as configurações do projeto,
-com suporte a carregar configurações de arquivos e variáveis de ambiente.
-
-Autor: Descomplicar - Agência de Aceleração Digital
-https://descomplicar.pt
+/**
+ * Autor: Descomplicar - Agência de Aceleração Digital
+ * https://descomplicar.pt
+ */
 """
 
 import os
-import json
-import logging
-from typing import Dict, Any, Optional
-from dotenv import load_dotenv
 from pathlib import Path
+from typing import Dict, Any
+from dotenv import load_dotenv
 
-from src.utils.cache import Cache
-
-# Carregar variáveis de ambiente
+# Carrega as variáveis de ambiente do arquivo .env
 load_dotenv()
 
-class Settings:
-    """
-    Gerenciador de configurações do projeto.
-    
-    Esta classe centraliza todas as configurações utilizadas pelo sistema,
-    carregando de diversas fontes (arquivos, ambiente, padrões) e fornecendo
-    acesso consistente a elas.
-    """
-    
-    _instance = None
-    
-    def __new__(cls, *args, **kwargs):
-        """Implementa padrão Singleton."""
-        if cls._instance is None:
-            cls._instance = super(Settings, cls).__new__(cls)
-            cls._instance._initialized = False
-        return cls._instance
-    
-    def __init__(self, config_file: str = None):
-        """
-        Inicializa o gerenciador de configurações.
-        
-        Args:
-            config_file: Caminho opcional para arquivo de configuração JSON/YAML
-        """
-        # Evitar reinicialização no Singleton
-        if self._initialized:
-            return
-        
-        self.logger = logging.getLogger(__name__)
-        self.config_file = config_file
-        self.config = {}
-        self._cache = None
-        
-        # Carregar configurações padrão
-        self._load_default_config()
-        
-        # Carregar configurações de arquivo se fornecido
-        if config_file:
-            self._load_from_file(config_file)
-        
-        # Sobrescrever com variáveis de ambiente
-        self._load_from_env()
-        
-        self._initialized = True
-        self.logger.info("Configurações carregadas")
-    
-    def _load_default_config(self):
-        """Carrega as configurações padrão."""
-        self.config = {
-            # Configurações gerais
-            "app_name": "GeradorWP",
-            "version": "0.1.0",
-            
-            # Configurações de logging
-            "logging": {
-                "level": "INFO",
-                "file": "geradorwp.log",
-                "console": True
-            },
-            
-            # Configurações de cache
-            "cache": {
-                "enabled": True,
-                "dir": "cache",
-                "ttl": 86400  # 1 dia em segundos
-            },
-            
-            # Configurações WordPress
-            "wordpress": {
-                "url": os.getenv("WP_URL", ""),
-                "username": os.getenv("WP_USERNAME", ""),
-                "password": os.getenv("WP_PASSWORD", "") or os.getenv("WP_APP_PASSWORD", "")
-            },
-            
-            # Configurações de API
-            "api": {
-                "dify": {
-                    "api_key": os.getenv("DIFY_API_KEY", ""),
-                    "api_url": os.getenv("DIFY_API_URL", "")
-                },
-                "openai": {
-                    "api_key": os.getenv("OPENAI_API_KEY", ""),
-                    "model": "gpt-4"
-                }
-            },
-            
-            # Configurações de conteúdo
-            "content": {
-                "min_word_count": 2000,
-                "max_word_count": 3000,
-                "use_acida_model": True,
-                "seo_min_score": 80
-            },
-            
-            # Configurações de pesquisa
-            "research": {
-                "min_sources": 5,
-                "max_sources": 15,
-                "min_source_quality": 0.7
-            },
-            
-            # Configurações de publicação
-            "publishing": {
-                "default_status": "draft",
-                "validate_before_publish": True,
-                "verify_after_publish": True,
-                "add_featured_image": True
-            }
-        }
-    
-    def _load_from_file(self, file_path: str):
-        """
-        Carrega configurações de um arquivo JSON ou YAML.
-        
-        Args:
-            file_path: Caminho para o arquivo de configuração
-        """
-        try:
-            path = Path(file_path)
-            
-            if not path.exists():
-                self.logger.warning(f"Arquivo de configuração não encontrado: {file_path}")
-                return
-            
-            with open(path, 'r', encoding='utf-8') as f:
-                if path.suffix.lower() in ['.yaml', '.yml']:
-                    import yaml
-                    loaded_config = yaml.safe_load(f)
-                else:
-                    loaded_config = json.load(f)
-            
-            # Atualizar configurações recursivamente
-            self._update_dict_recursive(self.config, loaded_config)
-            self.logger.info(f"Configurações carregadas do arquivo: {file_path}")
-            
-        except Exception as e:
-            self.logger.error(f"Erro ao carregar configurações do arquivo {file_path}: {str(e)}")
-    
-    def _load_from_env(self):
-        """Carrega configurações de variáveis de ambiente."""
-        # WordPress
-        if os.getenv("WP_URL"):
-            self.config["wordpress"]["url"] = os.getenv("WP_URL")
-        if os.getenv("WP_USERNAME"):
-            self.config["wordpress"]["username"] = os.getenv("WP_USERNAME")
-        if os.getenv("WP_PASSWORD") or os.getenv("WP_APP_PASSWORD"):
-            self.config["wordpress"]["password"] = os.getenv("WP_PASSWORD") or os.getenv("WP_APP_PASSWORD")
-        
-        # Dify API
-        if os.getenv("DIFY_API_KEY"):
-            self.config["api"]["dify"]["api_key"] = os.getenv("DIFY_API_KEY")
-        if os.getenv("DIFY_API_URL"):
-            self.config["api"]["dify"]["api_url"] = os.getenv("DIFY_API_URL")
-        
-        # OpenAI API
-        if os.getenv("OPENAI_API_KEY"):
-            self.config["api"]["openai"]["api_key"] = os.getenv("OPENAI_API_KEY")
-        if os.getenv("OPENAI_MODEL"):
-            self.config["api"]["openai"]["model"] = os.getenv("OPENAI_MODEL")
-        
-        # Logging
-        if os.getenv("LOG_LEVEL"):
-            self.config["logging"]["level"] = os.getenv("LOG_LEVEL")
-        if os.getenv("LOG_FILE"):
-            self.config["logging"]["file"] = os.getenv("LOG_FILE")
-    
-    def _update_dict_recursive(self, original: Dict, update: Dict):
-        """
-        Atualiza um dicionário recursivamente.
-        
-        Args:
-            original: Dicionário original a ser atualizado
-            update: Dicionário com atualizações
-        """
-        for key, value in update.items():
-            if key in original and isinstance(original[key], dict) and isinstance(value, dict):
-                self._update_dict_recursive(original[key], value)
-            else:
-                original[key] = value
-    
-    def get(self, key: str, default: Any = None) -> Any:
-        """
-        Obtém uma configuração pelo caminho de chaves.
-        
-        Args:
-            key: Caminho de chaves separadas por ponto (e.g., "wordpress.url")
-            default: Valor padrão a retornar se a configuração não for encontrada
-            
-        Returns:
-            Valor da configuração ou padrão se não encontrada
-        """
-        keys = key.split('.')
-        config = self.config
-        
-        try:
-            for k in keys:
-                config = config[k]
-            return config
-        except (KeyError, TypeError):
-            return default
-    
-    def get_all(self) -> Dict[str, Any]:
-        """
-        Obtém todas as configurações.
-        
-        Returns:
-            Dicionário com todas as configurações
-        """
-        return self.config.copy()
-    
-    def get_cache(self) -> Cache:
-        """
-        Obtém a instância de cache.
-        
-        Returns:
-            Instância de Cache configurada
-        """
-        if self._cache is None:
-            cache_config = self.config.get("cache", {})
-            self._cache = Cache(
-                cache_dir=cache_config.get("dir", "cache"),
-                ttl=cache_config.get("ttl", 86400),
-                enabled=cache_config.get("enabled", True)
-            )
-        return self._cache
-    
-    def reload(self):
-        """Recarrega todas as configurações."""
-        self._load_default_config()
-        if self.config_file:
-            self._load_from_file(self.config_file)
-        self._load_from_env()
-        self.logger.info("Configurações recarregadas")
+# Configurações da API Dify
+DIFY_API_KEY = os.getenv("DIFY_API_KEY")
+DIFY_API_URL = os.getenv("DIFY_API_URL")
 
-# Instância global de configurações
-_settings_instance = None
+# Configurações do WordPress
+WP_URL = os.getenv("WP_URL")
+WP_USERNAME = os.getenv("WP_USERNAME")
+WP_PASSWORD = os.getenv("WP_PASSWORD")
+WP_APP_PASSWORD = os.getenv("WP_APP_PASSWORD")
 
-def get_settings(config_file: str = None) -> Settings:
-    """
-    Obtém a instância global de configurações.
-    
-    Args:
-        config_file: Caminho opcional para arquivo de configuração
-        
-    Returns:
-        Instância de Settings
-    """
-    global _settings_instance
-    if _settings_instance is None:
-        _settings_instance = Settings(config_file)
-    return _settings_instance 
+# Configurações de Cache
+CACHE_ENABLED = os.getenv("CACHE_ENABLED", "true").lower() == "true"
+CACHE_EXPIRY = int(os.getenv("CACHE_EXPIRY", "3600"))
+CACHE_DIR = Path(os.getenv("CACHE_DIR", "./cache"))
+
+# Configurações de Logging
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+LOG_DIR = Path(os.getenv("LOG_DIR", "./logs"))
+LOG_FORMAT = os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+# Configurações de Pesquisa
+MAX_SEARCH_RESULTS = int(os.getenv("MAX_SEARCH_RESULTS", "10"))
+SEARCH_TIMEOUT = int(os.getenv("SEARCH_TIMEOUT", "30"))
+TRUSTED_SOURCES_ONLY = os.getenv("TRUSTED_SOURCES_ONLY", "true").lower() == "true"
+
+# Configurações de Conteúdo
+MIN_WORD_COUNT = int(os.getenv("MIN_WORD_COUNT", "2000"))
+MAX_WORD_COUNT = int(os.getenv("MAX_WORD_COUNT", "3000"))
+KEYWORD_DENSITY_MIN = float(os.getenv("KEYWORD_DENSITY_MIN", "0.5"))
+KEYWORD_DENSITY_MAX = float(os.getenv("KEYWORD_DENSITY_MAX", "5.0"))
+
+# Configurações de Validação
+VALIDATE_LINKS = os.getenv("VALIDATE_LINKS", "true").lower() == "true"
+VALIDATE_IMAGES = os.getenv("VALIDATE_IMAGES", "true").lower() == "true"
+CHECK_PLAGIARISM = os.getenv("CHECK_PLAGIARISM", "true").lower() == "true"
+VALIDATE_SEO = os.getenv("VALIDATE_SEO", "true").lower() == "true"
+
+# Configurações de Backup
+BACKUP_ENABLED = os.getenv("BACKUP_ENABLED", "true").lower() == "true"
+BACKUP_DIR = Path(os.getenv("BACKUP_DIR", "./backups"))
+BACKUP_RETENTION = int(os.getenv("BACKUP_RETENTION", "7"))
+
+# Configurações de Performance
+MAX_RETRIES = int(os.getenv("MAX_RETRIES", "3"))
+REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "30"))
+CONCURRENT_REQUESTS = int(os.getenv("CONCURRENT_REQUESTS", "5"))
+
+# Criação de diretórios necessários
+for directory in [CACHE_DIR, LOG_DIR, BACKUP_DIR]:
+    directory.mkdir(parents=True, exist_ok=True)
+
+# Dicionário com todas as configurações
+SETTINGS: Dict[str, Any] = {
+    "dify": {
+        "api_key": DIFY_API_KEY,
+        "api_url": DIFY_API_URL
+    },
+    "wordpress": {
+        "url": WP_URL,
+        "username": WP_USERNAME,
+        "password": WP_PASSWORD,
+        "app_password": WP_APP_PASSWORD
+    },
+    "cache": {
+        "enabled": CACHE_ENABLED,
+        "expiry": CACHE_EXPIRY,
+        "dir": CACHE_DIR
+    },
+    "logging": {
+        "level": LOG_LEVEL,
+        "dir": LOG_DIR,
+        "format": LOG_FORMAT
+    },
+    "search": {
+        "max_results": MAX_SEARCH_RESULTS,
+        "timeout": SEARCH_TIMEOUT,
+        "trusted_sources_only": TRUSTED_SOURCES_ONLY
+    },
+    "content": {
+        "min_word_count": MIN_WORD_COUNT,
+        "max_word_count": MAX_WORD_COUNT,
+        "keyword_density_min": KEYWORD_DENSITY_MIN,
+        "keyword_density_max": KEYWORD_DENSITY_MAX
+    },
+    "validation": {
+        "validate_links": VALIDATE_LINKS,
+        "validate_images": VALIDATE_IMAGES,
+        "check_plagiarism": CHECK_PLAGIARISM,
+        "validate_seo": VALIDATE_SEO
+    },
+    "backup": {
+        "enabled": BACKUP_ENABLED,
+        "dir": BACKUP_DIR,
+        "retention": BACKUP_RETENTION
+    },
+    "performance": {
+        "max_retries": MAX_RETRIES,
+        "request_timeout": REQUEST_TIMEOUT,
+        "concurrent_requests": CONCURRENT_REQUESTS
+    }
+} 
