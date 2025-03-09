@@ -9,7 +9,8 @@ import os
 import json
 import logging
 import aiohttp
-from typing import Dict, Optional
+import asyncio
+from typing import Dict, Optional, Any
 
 class DifyClient:
     """Cliente para integração com a API Dify."""
@@ -89,26 +90,33 @@ class DifyClient:
                 "keywords": ["Marketing Digital", "PMEs", "Portugal", "ROI", "Vendas Online"]
             }
     
-    async def completion(self, prompt: str) -> Dict:
+    async def completion(self, prompt: str, **kwargs) -> Dict[str, Any]:
         """
-        Envia um prompt para a API Dify para completar.
+        Envia um prompt para a API Dify e retorna a resposta.
         
         Args:
-            prompt: Prompt para completar
+            prompt (str): O prompt a ser enviado para Dify.
+            **kwargs: Argumentos adicionais para a API.
             
         Returns:
-            Dict com a resposta da API
+            Dict[str, Any]: Resposta da API Dify.
         """
+        print(f"DifyClient: Enviando prompt à API: {prompt[:50]}...")
+        
+        inputs = kwargs.get('inputs', {})
+        response_mode = kwargs.get('response_mode', 'blocking')
+        user_id = kwargs.get('user', 'descomplicar')
+        
+        request_data = {
+            'inputs': inputs,
+            'query': prompt,
+            'response_mode': response_mode,
+            'user': user_id
+        }
+        
+        logging.info(f"Enviando completion para Dify: {json.dumps(request_data)}")
+        
         try:
-            query = {
-                "inputs": {},
-                "query": prompt,
-                "response_mode": "blocking",
-                "user": "descomplicar"
-            }
-            
-            self.logger.info(f"Enviando completion para Dify: {json.dumps(query)}")
-            
             async with aiohttp.ClientSession() as session:
                 async with session.post(
                     f"{self.base_url}/chat-messages",
@@ -116,35 +124,45 @@ class DifyClient:
                         "Authorization": f"Bearer {self.api_key}",
                         "Content-Type": "application/json"
                     },
-                    json=query
+                    json=request_data,
+                    timeout=60  # Aumentar timeout para 60 segundos
                 ) as response:
                     if response.status != 200:
                         error_text = await response.text()
-                        self.logger.error(f"Erro na API Dify: Status {response.status}, Response: {error_text}")
-                        raise Exception(f"Erro na API Dify: {response.status}")
-                        
-                    data = await response.json()
-                    self.logger.info(f"Resposta completion Dify: {json.dumps(data)}")
+                        print(f"DifyClient: Erro na API (Status {response.status}): {error_text}")
+                        logging.error(f"Erro na API Dify: Status {response.status}, Detalhes: {error_text}")
+                        return {"choices": [{"text": f"Erro na API: {error_text}"}]}
                     
-                    # Formata a resposta no formato esperado
-                    return {
-                        "choices": [{
-                            "text": data.get("answer", ""),
-                            "index": 0,
-                            "finish_reason": "stop"
-                        }]
-                    }
+                    response_data = await response.json()
+                    logging.info(f"Resposta completion Dify: {json.dumps(response_data)}")
                     
+                    # Verificar se houve erro na resposta
+                    if 'error' in response_data:
+                        print(f"DifyClient: Erro reportado na resposta: {response_data['error']}")
+                        logging.error(f"Erro na resposta Dify: {response_data['error']}")
+                        return {"choices": [{"text": f"Erro na resposta: {response_data['error']}"}]}
+                    
+                    # Extrair texto da resposta
+                    if 'answer' in response_data:
+                        print(f"DifyClient: Resposta recebida com sucesso ({len(response_data['answer'])} caracteres)")
+                        return {"choices": [{"text": response_data['answer']}]}
+                    else:
+                        print("DifyClient: Resposta sem o campo 'answer'")
+                        logging.warning(f"Resposta Dify sem o campo 'answer': {json.dumps(response_data)}")
+                        return {"choices": [{"text": "Sem resposta válida da API"}]}
+                    
+        except aiohttp.ClientError as e:
+            print(f"DifyClient: Erro de conexão: {str(e)}")
+            logging.error(f"Erro de conexão com a API Dify: {str(e)}")
+            return {"choices": [{"text": f"Erro de conexão: {str(e)}"}]}
+        except asyncio.TimeoutError:
+            print("DifyClient: Timeout na conexão com a API")
+            logging.error("Timeout na conexão com a API Dify")
+            return {"choices": [{"text": "Timeout na conexão com a API"}]}
         except Exception as e:
-            self.logger.error(f"Erro ao completar prompt: {str(e)}")
-            # Retorna uma resposta base em caso de erro
-            return {
-                "choices": [{
-                    "text": self._generate_fallback_content(prompt),
-                    "index": 0,
-                    "finish_reason": "stop"
-                }]
-            }
+            print(f"DifyClient: Erro inesperado: {str(e)}")
+            logging.error(f"Erro inesperado ao chamar a API Dify: {str(e)}")
+            return {"choices": [{"text": f"Erro inesperado: {str(e)}"}]}
     
     def _extract_statistics(self, data: Dict) -> Dict:
         """Extrai estatísticas dos dados."""

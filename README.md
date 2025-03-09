@@ -1,134 +1,155 @@
-# Gerador de Artigos WordPress
+# GeradorWP - Gerador de Conteúdo WordPress
 
-## Descrição
-Sistema automatizado para geração e publicação de artigos otimizados para SEO no WordPress, desenvolvido pela Descomplicar.
+Sistema automatizado para geração e publicação de conteúdo de alta qualidade no WordPress, utilizando CrewAI e o modelo ACIDA.
 
-## Funcionalidades
-- Geração de artigos completos com mais de 2000 palavras
-- Otimização SEO automática com Rank Math
-- Geração de imagens destacadas otimizadas
-- Gestão automática de categorias e tags
-- Sistema de cache para imagens
-- Integração completa com WordPress REST API
-- Suporte a metadados SEO personalizados
-- Verificação e validação de conteúdo
+## Sobre o Projeto
+
+O GeradorWP utiliza uma arquitetura baseada em agentes para pesquisar, escrever e publicar conteúdo de forma eficiente e com alta qualidade. O sistema é especialmente focado no mercado português, utilizando português europeu autêntico e referências locais relevantes.
+
+### Modelo ACIDA
+
+Todo o conteúdo gerado segue o modelo ACIDA:
+- **Attention**: Capte a atenção (200-300 palavras)
+- **Confidence**: Estabeleça credibilidade (400-500 palavras)
+- **Interest**: Desperte interesse (500-600 palavras)
+- **Decision**: Ajude na tomada de decisão (400-500 palavras)
+- **Action**: Motive à ação (150-200 palavras)
 
 ## Requisitos
-- Python 3.10 ou superior
-- WordPress com REST API ativada
-- Plugin Rank Math SEO instalado e configurado
-- Acesso de aplicação WordPress configurado
+
+- Python 3.10+
+- WordPress com acesso XML-RPC
+- API Keys para serviços (OpenAI, DifyAI, etc.)
 
 ## Instalação
-1. Clone o repositório
-```bash
-git clone https://github.com/descomplicar/gerador-wp.git
-cd gerador-wp
+
+1. Clone o repositório:
+   ```bash
+   git clone https://github.com/descomplicar/geradorwp.git
+   cd geradorwp
+   ```
+
+2. Crie e ative um ambiente virtual:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # Linux/Mac
+   venv\Scripts\activate     # Windows
+   ```
+
+3. Instale as dependências:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Configure o arquivo .env:
+   ```bash
+   cp .env.example .env
+   # Edite o arquivo .env com suas credenciais
+   ```
+
+## Arquitetura
+
+O sistema segue uma arquitetura modular baseada em agentes:
+
+```
+src/
+├── agents/                # Agentes de IA
+│   ├── researcher_agent.py   # Pesquisa e coleta de informações
+│   ├── writer_agent.py       # Geração de conteúdo usando modelo ACIDA
+│   └── publisher_agent.py    # Publicação no WordPress
+├── tasks/                 # Tarefas definidas para os agentes
+│   ├── research_task.py      # Definição de tarefas de pesquisa
+│   ├── writing_task.py       # Definição de tarefas de escrita
+│   └── publishing_task.py    # Definição de tarefas de publicação
+├── utils/                 # Utilitários e helpers
+│   ├── wordpress.py          # Cliente WordPress
+│   ├── logger.py             # Sistema de logging
+│   └── cache.py              # Sistema de cache
+├── config/                # Configurações do sistema
+│   ├── settings.py           # Gerenciamento de configurações
+│   └── prompts.py            # Templates de prompts para os agentes
+├── prompts/               # Arquivos de prompts extensos
+└── main.py                # Ponto de entrada do sistema
 ```
 
-2. Crie e ative o ambiente virtual
+## Uso
+
+### Processando um único tópico
+
 ```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# ou
-.\venv\Scripts\activate  # Windows
+python -m src.main single --topic "Marketing Digital para Clínicas" --keywords "marketing,clínicas,estratégia" --category "Marketing" --status draft
 ```
 
-3. Instale as dependências
+### Processando múltiplos tópicos de um arquivo
+
 ```bash
-pip install -r requirements.txt
+python -m src.main file --file topicos.json --status draft
 ```
 
-4. Configure as variáveis de ambiente
-```bash
-cp .env.example .env
-# Edite o arquivo .env com suas configurações
-```
+### Formato do arquivo de tópicos (JSON)
 
-## Configuração
-### Variáveis de Ambiente
-- `WP_URL`: URL da API WordPress (ex: https://descomplicar.pt/wp-json)
-- `WP_USERNAME`: Nome de utilizador WordPress
-- `WP_APP_PASSWORD`: Senha de aplicação WordPress
-
-### Categorias WordPress
-Configure os IDs corretos das categorias no ficheiro `src/publicar_artigo.py`:
-```python
-categories = [
-    369,  # Blog > Marketing Digital
-    373,  # Blog > Transformação Digital
-    370   # Blog > Vendas
+```json
+[
+  {
+    "topic": "Marketing Digital para Clínicas",
+    "keywords": ["marketing", "clínicas", "estratégia"],
+    "category": "Marketing"
+  },
+  {
+    "topic": "SEO para E-commerce",
+    "keywords": ["seo", "e-commerce", "vendas online"],
+    "category": "SEO"
+  }
 ]
 ```
 
-### Gerador de Imagens
-O sistema inclui um gerador de imagens destacadas com as seguintes especificações:
+### Formato do arquivo de tópicos (CSV)
 
-#### Configurações de Texto
-- Tamanho da fonte: 55px
-- Fonte: Montserrat Bold
-- Cor: #000000 (preto)
-- Margem superior: 350px
-- Largura máxima: 1000px
-- Espaçamento entre linhas: 15px
-- Máximo de linhas: 5
-
-#### Configurações de Imagem
-- Largura: 1200px
-- Altura: 630px
-- Qualidade: 90
-- DPI: 72
-- Formato: WebP
-
-#### Templates
-Os templates de imagem estão localizados em `gerador_wp/templates/` e incluem:
-- blog-e-commerce.png
-- blog-empreendedorismo.png
-- blog-gestao-pmes.png
-- blog-inteligencia-artificial.png
-- blog-marketing-digital.png
-- blog-tecnologia.png
-- blog-transformacao-digital.png
-- blog-vendas.png
-
-### Metadados SEO
-Os metadados do Rank Math são configurados automaticamente, incluindo:
-- SEO Title
-- Meta Description
-- Focus Keywords
-- Open Graph
-- Twitter Cards
-
-## Utilização
-Para publicar um novo artigo:
-```bash
-python src/publicar_artigo.py
+```csv
+topic,keywords,category
+"Marketing Digital para Clínicas","marketing,clínicas,estratégia",Marketing
+"SEO para E-commerce","seo,e-commerce,vendas online",SEO
 ```
 
-## Estrutura do Projeto
+## Configuração
+
+O sistema pode ser configurado através de:
+
+1. Variáveis de ambiente (arquivo .env)
+2. Arquivo de configuração (JSON ou YAML)
+3. Argumentos de linha de comando
+
+Exemplo de arquivo de configuração:
+
+```json
+{
+  "content": {
+    "min_word_count": 2500,
+    "max_word_count": 3500,
+    "use_acida_model": true
+  },
+  "publishing": {
+    "default_status": "draft",
+    "verify_after_publish": true
+  }
+}
 ```
-gerador-wp/
-├── src/
-│   ├── __init__.py
-│   ├── publicar_artigo.py
-│   ├── image_generator.py
-│   └── tests/
-│       └── test_image_generator.py
-├── gerador_wp/
-│   └── templates/
-│       ├── blog-e-commerce.png
-│       ├── blog-marketing-digital.png
-│       └── ...
-├── cache/
-│   └── images/
-├── .env
-├── requirements.txt
-└── README.md
-```
+
+## Desenvolvimento
+
+Para contribuir com o projeto:
+
+1. Bifurque o repositório
+2. Crie sua branch de funcionalidade (`git checkout -b feature/nova-funcionalidade`)
+3. Cometa suas alterações (`git commit -am 'Adiciona nova funcionalidade'`)
+4. Envie para a branch (`git push origin feature/nova-funcionalidade`)
+5. Abra um Pull Request
 
 ## Autor
+
 Descomplicar - Agência de Aceleração Digital
 https://descomplicar.pt
 
 ## Licença
-Proprietária - Todos os direitos reservados 
+
+Este projeto está licenciado sob a licença MIT - veja o arquivo LICENSE para detalhes. 
