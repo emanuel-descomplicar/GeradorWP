@@ -1,50 +1,32 @@
-# Web scraping
-playwright>=1.41.0
-html5lib==1.1
+# Core Dependencies
+python-dotenv>=1.0.0
+requests>=2.31.0
+beautifulsoup4>=4.12.2
+pillow>=10.0.0
 
-# Search engine
-duckduckgo-search>=7.2.1
+# WordPress Integration
+wordpress-xmlrpc>=2.3
+python-wordpress-xmlrpc>=2.3
 
-# LLM integration
-openai>=1.59.8 # o1 support
-anthropic>=0.42.0
-python-dotenv==1.0.0
+# AI & NLP
+openai>=1.12.0
+crewai>=0.11.0
 
 # Testing
-unittest2>=1.1.0
 pytest>=8.0.0
-pytest-asyncio>=0.23.5
+pytest-cov>=4.1.0
 
-# Google Generative AI
-google-generativeai
+# Development
+black>=24.1.1
+flake8>=7.0.0
+isort>=5.13.2
+mypy>=1.8.0
 
-# gRPC, for Google Generative AI preventing WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
-grpcio==1.70.0
-
-# Dependências principais
-requests==2.31.0
-python-wordpress-xmlrpc>=2.3
-Pillow>=10.0.0
-python-dotenv>=1.0.0
-beautifulsoup4==4.12.2
-
-# Utilitários
-python-slugify>=8.0.3
-python-dateutil==2.9.0
-
-# Ferramentas de desenvolvimento
-pytest>=7.4.0
-black>=23.7.0
-isort>=5.12.0
-flake8>=6.1.0
-mypy>=1.5.0
-
-# Documentação
+# Documentation
 mkdocs>=1.5.3
 mkdocs-material>=9.5.3
 
-# New dependencies
-langchain>=0.1.0
-
-# Added from the code block
-typing-extensions==4.9.0
+# Utilities
+python-slugify>=8.0.1
+pyyaml>=6.0.1
+tqdm>=4.66.1

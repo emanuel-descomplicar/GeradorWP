@@ -1,124 +1,66 @@
 # GeradorWP
 
-Gerador de conteúdo para WordPress com otimização SEO e geração de imagens.
-
-## Autor
-Descomplicar - Agência de Aceleração Digital  
-https://descomplicar.pt
+## Descrição
+Gerador automático de artigos para WordPress com inteligência artificial. Desenvolvido pela Descomplicar, este projeto permite criar conteúdo estruturado e otimizado para SEO de forma automatizada.
 
 ## Funcionalidades
-
-- Geração de conteúdo estruturado no formato ACIDA
+- Geração automática de artigos com IA
+- Formatação estruturada do conteúdo
 - Otimização SEO automática
-- Geração de imagens destacadas personalizadas
-- Publicação direta no WordPress
-- Sistema de cache e logging
-- Validações e tratamento de erros
-
-## Estrutura do Projeto
-
-```
-src/              # Código principal
-├── config/       # Configurações
-│   ├── settings.py    # Configurações do projeto
-│   └── templates.py   # Templates de prompts
-├── utils/        # Utilitários
-│   ├── wordpress.py   # Cliente WordPress
-│   ├── image.py      # Gerador de imagens
-│   ├── content.py    # Gerenciador de conteúdo
-│   ├── seo.py        # Otimização SEO
-│   ├── dify.py       # Cliente Dify
-│   ├── exceptions.py # Exceções e validações
-│   ├── logger.py     # Sistema de logging
-│   └── cache.py      # Sistema de cache
-└── main.py       # Ponto de entrada
-
-tests/            # Testes
-assets/           # Recursos estáticos
-.cache/           # Cache
-logs/             # Logs
-backups/          # Backups
-```
+- Integração direta com WordPress
+- Geração automática de imagens destacadas
+- Categorização inteligente de conteúdo
+- Sistema de tags automático
 
 ## Requisitos
-
-- Python 3.10+
-- WordPress com XML-RPC habilitado
-- Chave de API Dify
+- Python 3.10 ou superior
+- Acesso a uma instalação WordPress
+- Credenciais de API necessárias
+- Bibliotecas Python (ver requirements.txt)
 
 ## Instalação
-
 1. Clone o repositório:
 ```bash
-git clone https://github.com/descomplicar/geradorwp.git
-cd geradorwp
+git clone https://github.com/emanuel-descomplicar/GeradorWP.git
 ```
 
-2. Crie um ambiente virtual:
+2. Instale as dependências:
 ```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-venv\Scripts\activate     # Windows
+pip install -r requirements.txt
 ```
 
-3. Instale as dependências:
-```bash
-pip install -e .
-```
-
-4. Configure as variáveis de ambiente:
+3. Configure as variáveis de ambiente:
 ```bash
 cp .env.example .env
-# Edite o arquivo .env com suas configurações
+# Edite o ficheiro .env com suas credenciais
 ```
 
-## Uso
-
-1. Publicar um artigo:
-```python
-from src.utils.wordpress import WordPressClient
-from src.utils.image import ImageGenerator
-from src.utils.content import ContentManager
-from src.utils.seo import SEOOptimizer
-
-# Inicializar componentes
-wp = WordPressClient()
-image_gen = ImageGenerator()
-content_manager = ContentManager()
-seo = SEOOptimizer()
-
-# Criar e publicar artigo
-result = wp.create_post(
-    title="Seu Título",
-    content="Seu Conteúdo",
-    status="draft",
-    category="Sua Categoria",
-    tags=["tag1", "tag2"]
-)
-```
-
-## Desenvolvimento
-
-1. Instale as dependências de desenvolvimento:
+## Utilização
 ```bash
-pip install -e ".[dev]"
+python src/examples/generate_article.py --topic "Seu Tópico" --category "sua-categoria" --publish
 ```
 
-2. Configure as ferramentas de qualidade:
-```bash
-# Formatar código
-black src/ tests/
-
-# Ordenar imports
-isort src/ tests/
-
-# Verificar tipos
-mypy src/
-
-# Executar testes
-pytest
+## Estrutura do Projeto
 ```
+GeradorWP/
+├── src/
+│   ├── generators/
+│   │   └── content_generator.py
+│   ├── integrations/
+│   │   ├── dify_client.py
+│   │   └── wordpress_client.py
+│   └── examples/
+│       └── generate_article.py
+├── debug/
+│   └── verify_solution.py
+├── tests/
+├── docs/
+└── requirements.txt
+```
+
+## Autor
+Descomplicar - Agência de Aceleração Digital
+https://descomplicar.pt
 
 ## Licença
-
-MIT License - veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Todos os direitos reservados © 2024 Descomplicar
