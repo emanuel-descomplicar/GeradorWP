@@ -15,9 +15,13 @@ import os
 import json
 import mimetypes
 import requests
-from typing import Dict, List, Optional, Any, Tuple
-from bs4 import BeautifulSoup
+from typing import Dict, List, Optional, Any, Tuple, Union
+from bs4 import BeautifulSoup, Comment
 import logging
+import requests.exceptions
+import urllib.parse
+import random
+import time
 
 # Configuração do logging
 logging.basicConfig(
@@ -52,9 +56,47 @@ class WordPressClient:
             self.base_url = self.base_url[:-1]
             
         self.api_url = f"{self.base_url}/wp-json/wp/v2"
+        
+        # Utilizar autenticação básica para API
         self.auth = (self.username, self.password)
         
+        # Alternativamente, obter token JWT para autenticação mais robusta (quando disponível)
+        self.token = None
+        try:
+            self._get_jwt_token()
+        except:
+            logger.warning("Não foi possível obter token JWT, usando autenticação básica.")
+        
+        self.default_timeout = 30  # Timeout padrão para requisições
+        
         logger.info(f"Cliente WordPress inicializado para {self.base_url}")
+
+    def _get_jwt_token(self):
+        """
+        Obtém um token JWT para autenticação com a API WordPress.
+        Requer o plugin JWT Authentication for WP REST API instalado.
+        """
+        try:
+            token_url = f"{self.base_url}/wp-json/jwt-auth/v1/token"
+            response = requests.post(
+                token_url,
+                data={
+                    'username': self.username,
+                    'password': self.password
+                },
+                timeout=self.default_timeout
+            )
+            
+            if response.status_code == 200:
+                self.token = response.json().get('token')
+                if self.token:
+                    logger.info("Token JWT obtido com sucesso.")
+                    return True
+            
+            return False
+        except Exception as e:
+            logger.warning(f"Erro ao obter token JWT: {str(e)}")
+            return False
 
     def get_categories(self) -> List[Dict[str, Any]]:
         """
@@ -64,7 +106,11 @@ class WordPressClient:
             Lista de categorias com seus IDs e nomes
         """
         try:
-            response = requests.get(f"{self.api_url}/categories?per_page=100", auth=self.auth)
+            response = requests.get(
+                f"{self.api_url}/categories?per_page=100", 
+                auth=self.auth,
+                timeout=self.default_timeout
+            )
             response.raise_for_status()
             categories = response.json()
             logger.info(f"Obtidas {len(categories)} categorias")
@@ -84,7 +130,12 @@ class WordPressClient:
             ID da categoria ou None se não encontrada
         """
         try:
-            response = requests.get(f"{self.api_url}/categories?slug={slug}", auth=self.auth)
+            encoded_slug = urllib.parse.quote(slug)
+            response = requests.get(
+                f"{self.api_url}/categories?slug={encoded_slug}", 
+                auth=self.auth,
+                timeout=self.default_timeout
+            )
             response.raise_for_status()
             categories = response.json()
             
@@ -99,23 +150,177 @@ class WordPressClient:
             logger.error(f"Erro ao obter categoria por slug: {str(e)}")
             return None
 
+    def get_tags(self) -> List[Dict[str, Any]]:
+        """
+        Obtém a lista de tags disponíveis no WordPress.
+        
+        Returns:
+            Lista de tags com seus IDs e nomes
+        """
+        try:
+            response = requests.get(
+                f"{self.api_url}/tags?per_page=100", 
+                auth=self.auth,
+                timeout=self.default_timeout
+            )
+            response.raise_for_status()
+            tags = response.json()
+            logger.info(f"Obtidas {len(tags)} tags")
+            return tags
+        except requests.RequestException as e:
+            logger.error(f"Erro ao obter tags: {str(e)}")
+            return []
+
+    def get_or_create_tag(self, name: str) -> Optional[int]:
+        """
+        Obtém o ID de uma tag pelo nome ou cria uma nova se não existir.
+        
+        Args:
+            name: Nome da tag
+            
+        Returns:
+            ID da tag ou None se falhar
+        """
+        # Normalizar o nome da tag
+        name = name.strip().lower()
+        if not name:
+            return None
+            
+        try:
+            # Tentar encontrar a tag existente
+            encoded_name = urllib.parse.quote(name)
+            response = requests.get(
+                f"{self.api_url}/tags?search={encoded_name}", 
+                auth=self.auth,
+                timeout=self.default_timeout
+            )
+            response.raise_for_status()
+            tags = response.json()
+            
+            # Verificar tags existentes pelo nome exato
+            for tag in tags:
+                if tag['name'].lower() == name:
+                    logger.info(f"Tag '{name}' encontrada com ID {tag['id']}")
+                    return tag['id']
+            
+            # Criar nova tag se não existir
+            logger.info(f"Criando nova tag: '{name}'")
+            response = requests.post(
+                f"{self.api_url}/tags",
+                auth=self.auth,
+                json={'name': name},
+                timeout=self.default_timeout
+            )
+            response.raise_for_status()
+            tag_id = response.json()['id']
+            logger.info(f"Tag '{name}' criada com ID {tag_id}")
+            return tag_id
+        
+        except requests.RequestException as e:
+            logger.error(f"Erro ao obter/criar tag '{name}': {str(e)}")
+            return None
+
+    def process_tags(self, tags: List[str]) -> List[int]:
+        """
+        Processa uma lista de tags, obtendo ou criando cada uma.
+        
+        Args:
+            tags: Lista de nomes de tags
+            
+        Returns:
+            Lista de IDs de tags
+        """
+        tag_ids = []
+        for tag_name in tags:
+            tag_id = self.get_or_create_tag(tag_name)
+            if tag_id:
+                tag_ids.append(tag_id)
+        
+        logger.info(f"Processadas {len(tag_ids)} tags")
+        return tag_ids
+
+    def download_image(self, url: str, output_dir: str = "temp_images") -> Optional[str]:
+        """
+        Faz download de uma imagem a partir de uma URL.
+        
+        Args:
+            url: URL da imagem
+            output_dir: Diretório para salvar a imagem
+            
+        Returns:
+            Caminho do arquivo local ou None se falhar
+        """
+        if not url:
+            return None
+            
+        try:
+            # Criar diretório se não existir
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+                
+            # Gerar nome de arquivo único
+            filename = f"image_{int(time.time())}_{random.randint(1000, 9999)}"
+            
+            # Determinar extensão do arquivo
+            content_type = None
+            response = requests.head(url, timeout=self.default_timeout)
+            if response.status_code == 200:
+                content_type = response.headers.get('Content-Type', '')
+                
+            if 'image/jpeg' in content_type or url.lower().endswith('.jpg') or url.lower().endswith('.jpeg'):
+                filename += '.jpg'
+            elif 'image/png' in content_type or url.lower().endswith('.png'):
+                filename += '.png'
+            elif 'image/webp' in content_type or url.lower().endswith('.webp'):
+                filename += '.webp'
+            else:
+                filename += '.jpg'  # Default para jpg
+                
+            # Caminho completo para o arquivo
+            file_path = os.path.join(output_dir, filename)
+            
+            # Fazer download da imagem
+            response = requests.get(url, stream=True, timeout=self.default_timeout)
+            response.raise_for_status()
+            
+            with open(file_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+            
+            logger.info(f"Imagem baixada com sucesso: {file_path}")
+            return file_path
+        
+        except Exception as e:
+            logger.error(f"Erro ao baixar imagem: {str(e)}")
+            return None
+
     def upload_media(self, file_path: str) -> Optional[int]:
         """
         Faz upload de um arquivo de mídia para o WordPress.
         
         Args:
-            file_path: Caminho para o arquivo a ser enviado
+            file_path: Caminho para o arquivo a ser enviado ou URL para download
             
         Returns:
             ID da mídia ou None se o upload falhar
         """
+        # Verificar se é uma URL
+        if file_path and (file_path.startswith('http://') or file_path.startswith('https://')):
+            local_file = self.download_image(file_path)
+            if not local_file:
+                logger.error(f"Não foi possível baixar a imagem: {file_path}")
+                return None
+            file_path = local_file
+            
+        # Verificar se o arquivo existe
         if not os.path.exists(file_path):
             logger.error(f"Arquivo não encontrado: {file_path}")
             return None
             
         try:
             filename = os.path.basename(file_path)
-            mimetype = mimetypes.guess_type(file_path)[0]
+            mimetype = mimetypes.guess_type(file_path)[0] or 'image/jpeg'
             
             with open(file_path, 'rb') as file:
                 media_data = file.read()
@@ -125,15 +330,66 @@ class WordPressClient:
                 'Content-Type': mimetype,
             }
             
-            response = requests.post(
-                f"{self.api_url}/media",
-                auth=self.auth,
-                headers=headers,
-                data=media_data
-            )
-            response.raise_for_status()
+            # Usar token JWT se disponível, senão usar autenticação básica
+            if self.token:
+                headers['Authorization'] = f'Bearer {self.token}'
+                auth = None
+            else:
+                auth = self.auth
+            
+            # Tentar com autenticação básica primeiro
+            try:
+                response = requests.post(
+                    f"{self.api_url}/media",
+                    auth=auth,
+                    headers=headers,
+                    data=media_data,
+                    timeout=self.default_timeout
+                )
+                response.raise_for_status()
+            except requests.exceptions.HTTPError as e:
+                # Se falhar com 401 e tivermos um token, tentar com o token
+                if e.response.status_code == 401 and self.token:
+                    logger.info("Tentando upload com token JWT após falha na autenticação básica")
+                    headers['Authorization'] = f'Bearer {self.token}'
+                    response = requests.post(
+                        f"{self.api_url}/media",
+                        headers=headers,
+                        data=media_data,
+                        timeout=self.default_timeout
+                    )
+                    response.raise_for_status()
+                # Se ainda não tivermos token, tentar com app-password
+                elif e.response.status_code == 401:
+                    logger.info("Tentando upload com app-password")
+                    app_pass = os.getenv('WP_APP_PASSWORD')
+                    if app_pass:
+                        app_auth = (self.username, app_pass)
+                        response = requests.post(
+                            f"{self.api_url}/media",
+                            auth=app_auth,
+                            headers={'Content-Disposition': f'attachment; filename="{filename}"',
+                                    'Content-Type': mimetype},
+                            data=media_data,
+                            timeout=self.default_timeout
+                        )
+                        response.raise_for_status()
+                    else:
+                        raise
+                else:
+                    raise
+            
             media_id = response.json()['id']
             logger.info(f"Mídia '{filename}' enviada com ID {media_id}")
+            
+            # Remover arquivo temporário se foi baixado
+            if file_path.startswith('temp_images/'):
+                try:
+                    os.remove(file_path)
+                    logger.info(f"Arquivo temporário removido: {file_path}")
+                except:
+                    pass
+                
             return media_id
         except requests.RequestException as e:
             logger.error(f"Erro ao fazer upload da mídia: {str(e)}")
@@ -147,6 +403,7 @@ class WordPressClient:
                    content: str, 
                    category_id: Optional[int] = None,
                    featured_media_id: Optional[int] = None,
+                   tags: Optional[List[Union[int, str]]] = None,
                    status: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """
         Cria um novo post no WordPress.
@@ -156,6 +413,7 @@ class WordPressClient:
             content: Conteúdo do post (HTML)
             category_id: ID da categoria (opcional)
             featured_media_id: ID da imagem destacada (opcional)
+            tags: Lista de IDs ou nomes de tags (opcional)
             status: Status do post ('draft', 'publish', 'pending')
             
         Returns:
@@ -174,12 +432,28 @@ class WordPressClient:
             
         if featured_media_id:
             post_data['featured_media'] = featured_media_id
+            
+        # Processar tags
+        if tags:
+            tag_ids = []
+            
+            # Processar strings de tags
+            str_tags = [tag for tag in tags if isinstance(tag, str)]
+            if str_tags:
+                tag_ids.extend(self.process_tags(str_tags))
+                
+            # Adicionar IDs de tags já existentes
+            tag_ids.extend([tag for tag in tags if isinstance(tag, int)])
+            
+            if tag_ids:
+                post_data['tags'] = tag_ids
         
         try:
             response = requests.post(
                 f"{self.api_url}/posts",
                 auth=self.auth,
-                json=post_data
+                json=post_data,
+                timeout=self.default_timeout
             )
             response.raise_for_status()
             post = response.json()
@@ -208,6 +482,25 @@ class WordPressClient:
         """
         soup = BeautifulSoup(html_content, 'html.parser')
         
+        # Remover quaisquer tags style ou comentários de código
+        for tag in soup.find_all('style'):
+            tag.decompose()
+        
+        # Remover comentários HTML
+        for comment in soup.find_all(text=lambda text: isinstance(text, Comment)):
+            comment.extract()
+        
+        # Remover qualquer bloco de código CSS inline visível
+        for text in soup.find_all(text=True):
+            if 'body {' in text or 'h1 {' in text or '.section {' in text:
+                if text.parent.name not in ['code', 'pre']:
+                    text.replace_with('')
+                
+        # Remover backticks de código markdown
+        for text in soup.find_all(text=lambda t: '```' in t or '`html' in t):
+            clean_text = text.replace('```html', '').replace('```', '').replace('`html', '')
+            text.replace_with(clean_text)
+        
         # Extrair o título se não fornecido
         if not title:
             h1_tag = soup.find('h1')
@@ -215,20 +508,119 @@ class WordPressClient:
                 title = h1_tag.text.strip()
                 h1_tag.decompose()  # Remove o h1 do conteúdo para evitar duplicação
         
-        # Processar o conteúdo para WordPress
-        # Pode ser expandido para adicionar classes, formatar elementos específicos, etc.
+        # Limpar cabeçalhos vazios ou duplicados
+        for tag in soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']):
+            if not tag.text.strip() or tag.text.strip() in ['Atenção', 'Confiança', 'Interesse', 'Decisão', 'Ação']:
+                tag.decompose()
         
-        # Converter o conteúdo de volta para HTML
+        # Formatar parágrafos
+        for p in soup.find_all('p'):
+            # Remover parágrafos vazios
+            if not p.text.strip():
+                p.decompose()
+            elif not p.get('class'):
+                p['class'] = 'wp-block-paragraph'
+            
+        # Formatar cabeçalhos
+        for i in range(2, 7):
+            for h in soup.find_all(f'h{i}'):
+                if not h.get('class'):
+                    h['class'] = 'wp-block-heading'
+        
+        # Formatar listas
+        for ul in soup.find_all('ul'):
+            if not ul.get('class'):
+                ul['class'] = 'wp-block-list'
+        
+        for ol in soup.find_all('ol'):
+            if not ol.get('class'):
+                ol['class'] = 'wp-block-list'
+        
+        # Remover tags script indesejadas
+        for script in soup.find_all('script'):
+            script.decompose()
+        
+        # Verificar se há blocos <!-- wp: --> e converter para formato correto se necessário
         content = str(soup)
+        
+        # Converter blocos HTML simples para blocos Gutenberg
+        if '<!-- wp:' not in content:
+            # Adicionar blocos Gutenberg conforme necessário
+            processed_content = ""
+            in_paragraph = False
+            
+            for line in content.split('\n'):
+                line = line.strip()
+                if not line:
+                    continue
+                
+                if line.startswith('<h2') and line.endswith('</h2>'):
+                    # Extrair o texto do cabeçalho
+                    heading_text = BeautifulSoup(line, 'html.parser').text
+                    processed_content += f'<!-- wp:heading -->\n{line}\n<!-- /wp:heading -->\n\n'
+                elif line.startswith('<p') and line.endswith('</p>'):
+                    processed_content += f'<!-- wp:paragraph -->\n{line}\n<!-- /wp:paragraph -->\n\n'
+                elif line.startswith('<ul') and line.endswith('</ul>'):
+                    processed_content += f'<!-- wp:list -->\n{line}\n<!-- /wp:list -->\n\n'
+                elif line.startswith('<ol') and line.endswith('</ol>'):
+                    processed_content += f'<!-- wp:list {{"ordered":true}} -->\n{line}\n<!-- /wp:list -->\n\n'
+                else:
+                    processed_content += line + "\n"
+            
+            content = processed_content
         
         logger.info(f"HTML processado para WordPress. Título: {title}")
         return title, content
+
+    def extract_tags_from_content(self, content: str, max_tags: int = 5) -> List[str]:
+        """
+        Extrai possíveis tags do conteúdo do artigo.
+        
+        Args:
+            content: Conteúdo HTML ou texto do artigo
+            max_tags: Número máximo de tags a extrair
+            
+        Returns:
+            Lista de tags extraídas
+        """
+        # Simplificar para texto
+        if '<' in content:
+            soup = BeautifulSoup(content, 'html.parser')
+            text = soup.get_text()
+        else:
+            text = content
+            
+        # Lista de palavras-chave comuns a evitar
+        stop_words = [
+            'a', 'e', 'o', 'as', 'os', 'um', 'uma', 'uns', 'umas', 'de', 'para', 'com', 'por',
+            'em', 'no', 'na', 'nos', 'nas', 'do', 'da', 'dos', 'das', 'que', 'como', 'mais',
+            'também', 'muito', 'muita', 'muitos', 'muitas', 'é', 'são', 'ser', 'estar'
+        ]
+        
+        # Extrair frases potenciais
+        words = text.lower().split()
+        words = [w for w in words if w not in stop_words and len(w) > 3]
+        
+        # Contar frequência
+        word_counts = {}
+        for word in words:
+            word_counts[word] = word_counts.get(word, 0) + 1
+            
+        # Ordenar por frequência
+        sorted_words = sorted(word_counts.items(), key=lambda x: x[1], reverse=True)
+        
+        # Extrair as mais frequentes
+        tags = [word for word, count in sorted_words[:max_tags]]
+        
+        return tags
 
     def publish_article_from_html(self, 
                                  html_content: str, 
                                  category_slug: str, 
                                  featured_image_path: Optional[str] = None,
                                  title: Optional[str] = None,
+                                 tags: Optional[List[str]] = None,
+                                 auto_tags: bool = True,
                                  status: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """
         Publica um artigo a partir de conteúdo HTML.
@@ -236,8 +628,10 @@ class WordPressClient:
         Args:
             html_content: Conteúdo HTML do artigo
             category_slug: Slug da categoria
-            featured_image_path: Caminho para a imagem destacada (opcional)
+            featured_image_path: Caminho para a imagem destacada ou URL (opcional)
             title: Título do artigo (se None, será extraído do HTML)
+            tags: Lista de tags para o artigo (opcional)
+            auto_tags: Se True, gera tags automaticamente a partir do conteúdo
             status: Status do post ('draft', 'publish', 'pending')
             
         Returns:
@@ -258,12 +652,26 @@ class WordPressClient:
             if not featured_media_id:
                 logger.warning("Não foi possível fazer upload da imagem destacada.")
         
+        # Processar tags
+        article_tags = []
+        if tags:
+            article_tags.extend(tags)
+            
+        # Gerar tags automáticas se solicitado
+        if auto_tags:
+            auto_generated_tags = self.extract_tags_from_content(html_content)
+            # Adicionar apenas tags que ainda não estão na lista
+            for tag in auto_generated_tags:
+                if tag not in article_tags:
+                    article_tags.append(tag)
+        
         # Criar o post
         result = self.create_post(
             title=extracted_title,
             content=processed_content,
             category_id=category_id,
             featured_media_id=featured_media_id,
+            tags=article_tags,
             status=status
         )
         

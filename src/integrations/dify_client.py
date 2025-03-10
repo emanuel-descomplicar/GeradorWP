@@ -26,14 +26,14 @@ class DifyClient:
         
         Args:
             api_key: Chave da API Dify (se None, usa DIFY_API_KEY do ambiente)
-            base_url: URL base da API (se None, usa DIFY_API_URL do ambiente)
+            base_url: URL base da API (se None, usa DIFY_BASE_URL do ambiente)
             knowledge_base_id: ID da base de conhecimento (se None, usa DIFY_KNOWLEDGE_BASE_ID do ambiente)
         """
         self.api_key = api_key or os.getenv('DIFY_API_KEY')
         if not self.api_key:
             raise ValueError("API key não fornecida e variável de ambiente DIFY_API_KEY não encontrada.")
             
-        self.base_url = base_url or os.getenv('DIFY_API_URL', "https://didi.descomplicar.pt/v1")
+        self.base_url = base_url or os.getenv('DIFY_BASE_URL', "https://didi.descomplicar.pt/v1")
         self.knowledge_base_id = knowledge_base_id or os.getenv('DIFY_KNOWLEDGE_BASE_ID', "default")
         
         self.headers = {

@@ -1,5 +1,8 @@
 Em relaçao ao prompt:
-verifica nesta pasta como está a ser construido o template dos artigos... pode ter dicas para melhorar. o que está atualmente está interessante, mas poderá ser melhorado. Devemos utilizar a API da Dify. ela tem uma vasta Base de Conhecimento especializado que deve ser utilizado.
+Devemos utilizar a API da Dify. ela tem uma vasta Base de Conhecimento especializado que deve ser utilizado.
+
+Aten ção aos links externos que devem estar presentes em todos os artigos, preferindo fontes crediveis.
+
 
 Estudos de caso verdadeiros podem ser incorporados. Mas têm que ser verdadeiros.
 

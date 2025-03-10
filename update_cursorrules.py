@@ -85,10 +85,16 @@ def create_cursorrules():
 - Qualidade: 90
 - Método: 6
 - Templates: PNG otimizados
-- Categorias com cores Material Design
-- Padrão de pontos: lado direito
-- Overlay: 0.3 opacidade
-- Gradiente: 0.4 opacidade
+- Categorias:
+  - blog-e-commerce: ecommerce-bg.png
+  - blog-empreendedorismo: empreendedorismo-bg.png
+  - blog-gestao-pmes: gestao-pmes-bg.png
+  - blog-inteligencia-artificial: ia-bg.png
+  - blog-marketing-digital: marketing-digital-bg.png
+  - blog-tecnologia: tecnologia-bg.png
+  - blog-transformacao-digital: transformacao-digital-bg.png
+  - blog-vendas: vendas-bg.png
+  - default: default-bg.png
 
 ## WordPress Integration
 - XML-RPC: ativado
