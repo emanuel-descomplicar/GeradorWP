@@ -50,4 +50,4 @@ config.local.yaml
 htmlcov/
 
 # Temp files
-*.tmp
+*.tmpvenv/
