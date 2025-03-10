@@ -1,2 +1,0 @@
-gerador_wp
-tests

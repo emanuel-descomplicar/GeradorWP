@@ -1,2 +1,0 @@
-[console_scripts]
-gerador-wp = src.main:main
