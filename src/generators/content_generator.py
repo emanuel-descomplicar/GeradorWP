@@ -15,6 +15,7 @@ import re
 import random
 from typing import Dict, List, Optional, Tuple
 from bs4 import BeautifulSoup
+from src.integrations.dify_client import DifyClient
 
 # Configuração do logging
 logger = logging.getLogger(__name__)
@@ -95,8 +96,22 @@ class Article:
         # Funções auxiliares
         def clean_content(content: str) -> str:
             """Limpa o conteúdo HTML."""
-            # Remove tags vazias e espaços extras
+            # Remove tags HTML extras
+            content = re.sub(r'</?(?:html|body|article|section)[^>]*>', '', content)
+            # Remove tags vazias
             content = re.sub(r'<[^>]*?/>', '', content)
+            # Remove tags h1 duplicadas
+            content = re.sub(r'<h1>.*?</h1>', '', content)
+            # Remove tags h2 duplicadas que correspondem aos títulos das seções
+            for title in section_titles.values():
+                content = re.sub(f'<h2>{title}</h2>', '', content)
+            # Remove tags ```html e ``` extras
+            content = re.sub(r'```html\s*', '', content)
+            content = re.sub(r'```\s*', '', content)
+            # Remove tags h3 duplicadas ou mal formatadas
+            content = re.sub(r'<h3>(.*?)</h3>\s*<p></h3>', r'<h3>\1</h3>', content)
+            content = re.sub(r'<h3></p>', '</p>', content)
+            # Remove espaços extras
             content = re.sub(r'\s+', ' ', content)
             return content.strip()
         
@@ -133,62 +148,64 @@ class Article:
             
             return questions
         
+        def format_section(content: str, section_type: str) -> str:
+            """Formata uma seção específica do artigo."""
+            if section_type == 'interest':
+                # Extrai e formata tópicos numerados
+                topics = extract_topics(content)
+                formatted_content = []
+                for num, title in topics:
+                    formatted_content.append(f'<h3>{num}. {title}</h3>')
+                    # Encontra o conteúdo entre este tópico e o próximo
+                    pattern = f'<h3>{num}[\.:\)]?\s+{re.escape(title)}</h3>(.*?)(?=<h3>|$)'
+                    match = re.search(pattern, content, re.DOTALL)
+                    if match:
+                        topic_content = clean_content(match.group(1))
+                        formatted_content.append(topic_content)
+                return '\n\n'.join(formatted_content)
+            elif section_type == 'faq':
+                # Formata perguntas e respostas
+                questions = extract_questions(content)
+                formatted_content = []
+                for question, answer in questions:
+                    formatted_content.extend([
+                        f'<h3>{question}</h3>',
+                        f'<p>{clean_content(answer)}</p>'
+                    ])
+                return '\n\n'.join(formatted_content)
+            else:
+                # Limpa e retorna o conteúdo normal
+                return clean_content(content)
+        
         # Construir o HTML
         html_parts = []
         
         # Título principal
         html_parts.append(f'<h1>{self.title}</h1>')
         
-        # Seção de Atenção (Introdução)
-        if 'attention' in self.sections:
-            html_parts.append(f'<h2>{section_titles["attention"]}</h2>')
-            html_parts.append(clean_content(self.sections['attention']))
+        # Seções do artigo
+        for section_name, section_title in section_titles.items():
+            if section_name in self.sections:
+                html_parts.append(f'<h2>{section_title}</h2>')
+                content = format_section(self.sections[section_name], section_name)
+                html_parts.append(content)
         
-        # Seção de Interesse (Desenvolvimento)
-        if 'interest' in self.sections:
-            html_parts.append(f'<h2>{section_titles["interest"]}</h2>')
-            topics = extract_topics(self.sections['interest'])
-            for num, title in topics:
-                html_parts.append(f'<h3>{num}. {title}</h3>')
-        
-        # Seção de Desejo (Benefícios)
-        if 'desire' in self.sections:
-            html_parts.append(f'<h2>{section_titles["desire"]}</h2>')
-            html_parts.append(clean_content(self.sections['desire']))
-        
-        # Seção de Ação (Conclusão)
-        if 'action' in self.sections:
-            html_parts.append(f'<h2>{section_titles["action"]}</h2>')
-            html_parts.append(clean_content(self.sections['action']))
-        
-        # Seção de FAQ
-        if 'faq' in self.sections:
-            html_parts.append(f'<h2>{section_titles["faq"]}</h2>')
-            questions = extract_questions(self.sections['faq'])
-            for question, answer in questions:
-                html_parts.append(f'<h3>{question}</h3>')
-                html_parts.append(f'<p>{answer}</p>')
-        
-        # Juntar todas as partes
-        return '\n'.join(html_parts)
+        # Juntar todas as partes com quebras de linha
+        return '\n\n'.join(html_parts)
 
 class ContentGenerator:
-    """Gerador de conteúdo para artigos."""
+    """Gerador de conteúdo usando a API Dify."""
     
-    def __init__(self, dify_client, knowledge_base_id: str = None):
+    def __init__(self, dify_client: Optional[DifyClient] = None):
         """Inicializa o gerador de conteúdo.
         
         Args:
-            dify_client: Instância do cliente Dify
-            knowledge_base_id: ID da base de conhecimento (se None, usa o valor do cliente Dify)
+            dify_client: Cliente Dify (opcional, cria um novo se None)
         """
-        self.dify_client = dify_client
-        self.knowledge_base_id = knowledge_base_id or dify_client.knowledge_base_id
-        
-        # Inicializar mapeamento de links internos
+        self.dify = dify_client or DifyClient()
         self.internal_links = self._initialize_internal_links()
         
-        logger.info(f"ContentGenerator inicializado com knowledge_base_id: {self.knowledge_base_id}")
+        logger.info(f"ContentGenerator inicializado com knowledge_base_id: {self.dify.knowledge_base_id}")
     
     def _initialize_internal_links(self) -> Dict[str, List[Dict[str, str]]]:
         """Inicializa o mapeamento de links internos por categoria."""
@@ -259,6 +276,42 @@ class ContentGenerator:
         Returns:
             Conteúdo da seção
         """
-        # Implementar lógica de geração de conteúdo aqui
-        # Por enquanto, retorna um placeholder
-        return f"Conteúdo da seção {section} sobre {topic}"
+        # Mapear seções para prompts específicos
+        prompts = {
+            'attention': f"""Escreva uma introdução cativante sobre {topic}. 
+            Inclua a importância do tema, contexto atual e o que será abordado no artigo.
+            Use parágrafos curtos e linguagem clara. Formate em HTML com tags <p> e <h3>.
+            Inclua 2-3 tópicos numerados sobre os principais pontos que serão abordados.""",
+            
+            'interest': f"""Desenvolva o conteúdo principal sobre {topic}.
+            Explique detalhadamente cada aspecto importante, use exemplos práticos e dados relevantes.
+            Formate em HTML usando tags <p>, <h3>, <ul>, <li> e <strong>.
+            Inclua 4-5 tópicos numerados com subtítulos em <h3> explicando cada aspecto importante.""",
+            
+            'desire': f"""Liste e explique os principais benefícios de {topic}.
+            Foque em resultados práticos e valor agregado.
+            Formate em HTML usando tags <p>, <h3>, <ul> e <li>.
+            Inclua 3-4 tópicos numerados com os benefícios mais relevantes.""",
+            
+            'action': f"""Escreva uma conclusão persuasiva sobre {topic}.
+            Inclua um resumo dos pontos principais e próximos passos práticos.
+            Formate em HTML usando tags <p> e <strong>.
+            Termine com uma chamada para ação clara.""",
+            
+            'faq': f"""Crie uma seção de perguntas frequentes sobre {topic}.
+            Inclua 5 perguntas relevantes com respostas objetivas.
+            Formate cada pergunta com <strong> e cada resposta em <p>.
+            Foque em dúvidas comuns e respostas práticas."""
+        }
+        
+        # Gerar conteúdo usando o Dify
+        try:
+            response = self.dify.generate_content(prompts[section])
+            if response and 'answer' in response:
+                return response['answer']
+            else:
+                logger.error(f"Erro ao gerar conteúdo para seção {section}: resposta inválida")
+                return f"<p>Erro ao gerar conteúdo para {section}</p>"
+        except Exception as e:
+            logger.error(f"Erro ao gerar conteúdo para seção {section}: {str(e)}")
+            return f"<p>Erro ao gerar conteúdo para {section}</p>"

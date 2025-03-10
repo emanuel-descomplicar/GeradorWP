@@ -29,11 +29,11 @@ class DifyClient:
         
         Args:
             api_key: Chave de API do Dify (se None, usa DIFY_API_KEY do .env)
-            base_url: URL base da API (se None, usa DIFY_BASE_URL do .env)
+            base_url: URL base da API (se None, usa DIFY_API_URL do .env)
             knowledge_base_id: ID da base de conhecimento (se None, usa DIFY_KNOWLEDGE_BASE_ID do .env)
         """
         self.api_key = api_key or os.getenv('DIFY_API_KEY')
-        self.base_url = base_url or os.getenv('DIFY_BASE_URL')
+        self.base_url = base_url or os.getenv('DIFY_API_URL')
         self.knowledge_base_id = knowledge_base_id or os.getenv('DIFY_KNOWLEDGE_BASE_ID')
         
         if not all([self.api_key, self.base_url, self.knowledge_base_id]):
@@ -45,6 +45,7 @@ class DifyClient:
         }
         
         logger.info(f"DifyClient inicializado com base_url: {self.base_url}")
+        logger.debug(f"Headers: {json.dumps(self.headers, indent=2)}")
     
     def generate_content(self, prompt: str, conversation_id: Optional[str] = None) -> Dict:
         """Gera conteúdo usando a API Dify.
@@ -61,17 +62,29 @@ class DifyClient:
         payload = {
             "inputs": {},
             "query": prompt,
-            "response_mode": "blocking",
+            "user": "gerador-wp",
+            "stream": False,
             "conversation_id": conversation_id,
             "knowledge_base_id": self.knowledge_base_id
         }
         
+        logger.debug(f"Enviando requisição para {endpoint}")
+        logger.debug(f"Payload: {json.dumps(payload, indent=2)}")
+        
         try:
             response = requests.post(endpoint, headers=self.headers, json=payload)
+            
+            # Log da resposta
+            logger.debug(f"Status code: {response.status_code}")
+            logger.debug(f"Response headers: {json.dumps(dict(response.headers), indent=2)}")
+            logger.debug(f"Response body: {response.text}")
+            
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
             logger.error(f"Erro ao gerar conteúdo: {str(e)}")
+            if hasattr(e.response, 'text'):
+                logger.error(f"Detalhes do erro: {e.response.text}")
             raise
     
     def get_similar_content(self, query: str, limit: int = 5) -> Dict:
